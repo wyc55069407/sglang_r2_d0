@@ -438,6 +438,7 @@ class Fp8LinearMethod(LinearMethodBase):
         # if not (self.is_k_contiguous(input) and self.is_k_contiguous(weight) and self.is_k_contiguous(weight_scale)):
         #     print("fp8_gemm_opt shape not supported!")
         #     return None
+        #breakpoint()
         if weight.dtype != torch.float8_e4m3fn:
             print("fp8_gemm_opt type not supported!")
             return None

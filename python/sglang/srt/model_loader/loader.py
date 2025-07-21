@@ -310,7 +310,17 @@ class DefaultModelLoader(BaseModelLoader):
         hf_folder, hf_weights_files, use_safetensors = self._prepare_weights(
             source.model_or_path, source.revision, source.fall_back_to_pt
         )
-        hf_weights_files = sorted(hf_weights_files)
+        def extract_shard_number(filename):
+            import re
+            # Matches patterns like model-10-of-61.safetensors
+            match = re.search(r"model-(\d+)-of-\d+", os.path.basename(filename))
+            if match:
+                return int(match.group(1))
+            # Fallback: try to extract any number in the filename
+            nums = re.findall(r"\d+", os.path.basename(filename))
+            return int(nums[0]) if nums else 0
+
+        hf_weights_files = sorted(hf_weights_files, key=extract_shard_number)
         if self.load_config.load_format == LoadFormat.NPCACHE:
             # Currently np_cache only support *.bin checkpoints
             assert use_safetensors is False
@@ -490,7 +500,10 @@ class DummyModelLoader(BaseModelLoader):
 
             # NOTE(woosuk): For accurate performance evaluation, we assign
             # random values to the weights.
-            initialize_dummy_weights(model)
+            # initialize_dummy_weights(model)
+            import os
+            current_pid = os.getpid()
+            initialize_dummy_weights(model, low = -1e-1, high = 1e-1, seed=1234)
 
             # Model weight loading consists of two stages:
             # 1. Initial weight loading.

@@ -150,6 +150,7 @@ ESIMD_INLINE void qk_rmsNorm128PerThread_32t(
   int64_t hidden_size_q,  // hidden_size
   int64_t hidden_size_k,  // hidden_size
   int64_t input_len,  // input len
+  int64_t qk_stride,  // 2112
   float variance_epsilon_q,
   float variance_epsilon_k,
   nd_item<1>& ndi) {
@@ -171,6 +172,13 @@ ESIMD_INLINE void qk_rmsNorm128PerThread_32t(
 
   simd<float, 32> varianceSum = 0;
 
+  int64_t q_stride = hidden_size_q;
+  int64_t k_stride = hidden_size_k;
+  if(qk_stride)
+  {
+    q_stride = k_stride = qk_stride;
+  }
+
   if (hh < hh_q_n)
   {
     uint32_t inputOffset = 128 * hh * sizeof(fp16);
@@ -180,15 +188,15 @@ ESIMD_INLINE void qk_rmsNorm128PerThread_32t(
           256,
           __ESIMD_ENS::lsc_data_size::default_size,
           __ESIMD_ENS::cache_hint::cached,
-          __ESIMD_ENS::cache_hint::cached>((uint8_t*)hidden_states_q + h * hidden_size_q * sizeof(fp16) + inputOffset);
+          __ESIMD_ENS::cache_hint::cached>((uint8_t*)hidden_states_q + h * q_stride * sizeof(fp16) + inputOffset);
 
     weight_FP16.template bit_cast_view<uint8_t>().template select<256, 1>(0) =
           __ESIMD_ENS::lsc_block_load<
           uint8_t,
           256,
           __ESIMD_ENS::lsc_data_size::default_size,
-          __ESIMD_ENS::cache_hint::cached,
-          __ESIMD_ENS::cache_hint::cached>((uint8_t*)weight_q + inputOffset);
+	  __ESIMD_ENS::cache_hint::cached,
+	  __ESIMD_ENS::cache_hint::cached>((uint8_t*)weight_q + inputOffset);
   }
   else
   {
@@ -199,7 +207,7 @@ ESIMD_INLINE void qk_rmsNorm128PerThread_32t(
           256,
           __ESIMD_ENS::lsc_data_size::default_size,
           __ESIMD_ENS::cache_hint::cached,
-          __ESIMD_ENS::cache_hint::cached>((uint8_t*)hidden_states_k + h * hidden_size_k * sizeof(fp16) + inputOffset);
+          __ESIMD_ENS::cache_hint::cached>((uint8_t*)hidden_states_k + h * k_stride * sizeof(fp16) + inputOffset);
 
     weight_FP16.template bit_cast_view<uint8_t>().template select<256, 1>(0) =
           __ESIMD_ENS::lsc_block_load<

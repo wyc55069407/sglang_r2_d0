@@ -30,6 +30,12 @@ TORCH_LIBRARY_FRAGMENT(sgl_kernel_esimd, m) {
                           int i0, int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8, int i9, \
                           float f0, float f1, float f2, float f3, float f4) -> Tensor");
   m.impl("esimd_kernel_uni", torch::kXPU, &esimd_kernel_uni);
+  m.def("esimd_kernel_uni_large_params(Tensor t0, Tensor t1, Tensor t2, Tensor t3, Tensor t4, Tensor t5, Tensor t6, Tensor t7, Tensor t8, Tensor t9, \
+                          Tensor t10, Tensor t11, Tensor t12, Tensor t13, Tensor t14, Tensor t15, Tensor t16, Tensor t17, Tensor t18, Tensor t19,\
+                          int i0, int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8, int i9, \ 
+                          int i10, int i11, int i12, int i13,int i14, int i15, int i16, int i17, int i18,int i19, \
+                          float f0, float f1, float f2, float f3, float f4) -> Tensor");
+  m.impl("esimd_kernel_uni_large_params", torch::kXPU, &esimd_kernel_uni_large_params);
 
   //   m.def(
   //       "fp8_blockwise_scaled_mm(Tensor mat_a, Tensor mat_b, Tensor scales_a, Tensor scales_b, ScalarType out_dtype,

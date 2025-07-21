@@ -16,6 +16,7 @@
 #include "esimd_kernels/rmsNorm.h"
 #include "esimd_kernels/rotary_pos_emb.h"
 #include "esimd_kernels/fp16_GEMV.h"
+#include "esimd_kernels/cat.h"
 
 void esimd_add(uint8_t* a, uint8_t* b, uint8_t* c, int64_t len, float factor, sycl::queue& q){
     sycl::range<1> LocalRange(1);
@@ -70,7 +71,7 @@ at::Tensor esimd_add(
   has_bias,                          \
   q                                  \
 
-void GEMV_a16_wfp8_block_host(
+inline void GEMV_a16_wfp8_block_host(
   uint8_t* input_data,
   uint8_t* weight_data,
   uint8_t* weight_scale_data,
@@ -125,6 +126,10 @@ void GEMV_a16_wfp8_block_host(
           {
             GEMV_a16_wfp8_block<fp16, 4, 512, 2, fp16, 128, 128, false, 1>(GEMV_A16_WFP8_BLK_PARAMS);
           }
+          else if (K == 512)
+          {
+            GEMV_a16_wfp8_block<fp16, 1, 512, 1, fp16, 128, 128, false, 1>(GEMV_A16_WFP8_BLK_PARAMS);
+          }
           else
           {
             GEMV_a16_wfp8_block<fp16, 8, 512, 2, fp16, 128, 128, false, 1>(GEMV_A16_WFP8_BLK_PARAMS);
@@ -144,6 +149,10 @@ void GEMV_a16_wfp8_block_host(
         else if (N <= 2112) // fused_qkv_a_proj_with_mqa
         {
           GEMV_a16_wfp8_block<fp16, 2, 256, 4, fp16, 128, 128, false, 2>(GEMV_A16_WFP8_BLK_PARAMS);
+        }
+        else if (K == 512)
+        {
+          GEMV_a16_wfp8_block<fp16, 2, 256, 1, fp16, 128, 128, false, 2>(GEMV_A16_WFP8_BLK_PARAMS);
         }
         else
         {
@@ -194,7 +203,7 @@ void GEMV_a16_wfp8_block_host(
 
   }
 
-void wfp8_dequant_host(
+inline void wfp8_dequant_host(
   uint8_t* weight_data,
   uint8_t* weight_scale_data,
   uint8_t* output_data,
@@ -263,7 +272,7 @@ void wfp8_dequant_host(
   weight_scale,  \
   q              \
 
-void BMM_GEMV_a16_wfp8_block_host(
+inline void BMM_GEMV_a16_wfp8_block_host(
   uint8_t* input_data,
   uint8_t* weight_data,
   uint8_t* output_data,
@@ -330,7 +339,7 @@ void BMM_GEMV_a16_wfp8_block_host(
 
 
 
-void esimd_sdpa_normal_with_reduce(
+inline void esimd_sdpa_normal_with_reduce(
     uint8_t* query,
     uint8_t* key,
     uint8_t* value,
@@ -359,7 +368,25 @@ void esimd_sdpa_normal_with_reduce(
 
 }
 
-void esimd_residual_kernel_rms_norm(
+inline void esimd_cat_qk(
+    uint8_t* q1,    //[header,seq,dim]
+    uint8_t* q2,    //[seq,header,dim] + stride 192
+    uint8_t* k1,    //[seq,header,dim]
+    uint8_t* k2,    //[seq,header,dim] + stride 2112
+    uint8_t* q,     //[seq,header,dim]
+    uint8_t* k,     //[seq,header,dim]
+    int64_t seq_len,  // input len
+    int64_t q_header_num,
+    int64_t k_header_num,
+    int64_t q_stride,
+    int64_t k_stride,
+    sycl::queue& dpcpp_queue) {
+
+  esimd_cat<fp16, 512, 64>(q1, q2, k1, k2, q, k, seq_len, q_header_num, k_header_num, q_stride, k_stride,  dpcpp_queue);
+
+}
+
+inline void esimd_residual_kernel_rms_norm(
   uint8_t* weight, uint8_t* residual, uint8_t* hidden_states, uint8_t* hidden_states_out,
 
   int64_t hidden_size,  // hidden_size
@@ -394,13 +421,14 @@ void esimd_residual_kernel_rms_norm(
 }
 }
 
-void esimd_residual_kernel_rms_norm_kq(
+inline void esimd_residual_kernel_rms_norm_kq(
   uint8_t* weight_q, uint8_t* weight_k, uint8_t* hidden_states_q, uint8_t* hidden_states_k,
   uint8_t* hidden_states_out_q, uint8_t* hidden_states_out_k,
 
   int64_t hidden_size_q,  // hidden_size
   int64_t hidden_size_k,  // hidden_size
   int64_t input_len,  // input len
+  int64_t qk_stride,  // 2112
   float variance_epsilon_q,
   float variance_epsilon_k,
 
@@ -426,6 +454,7 @@ void esimd_residual_kernel_rms_norm_kq(
             hidden_size_q,
             hidden_size_k,
             input_len,
+	    qk_stride,  // 2112
             variance_epsilon_q,
             variance_epsilon_k, ndi);
           });
@@ -449,7 +478,7 @@ void esimd_residual_kernel_rms_norm_kq(
 //     num_token_non_padded: Optional[torch.Tensor] = None,
 //     expert_location_dispatch_info: Optional[ExpertLocationDispatchInfo] = None,
 
-void esimd_grouped_topk(
+inline void esimd_grouped_topk(
   uint8_t* gating_output, uint8_t* correction_bias, uint8_t* topk_weights, uint8_t* topk_ids,
   uint8_t* cpu_hidden_states, uint8_t* hidden_states,
   int64_t topk_in,
@@ -710,7 +739,7 @@ void esimd_grouped_topk(
 }
 
 
-void esimd_grouped_topk_fuse_with_gate(
+inline void esimd_grouped_topk_fuse_with_gate(
   uint8_t* gating_output, uint8_t* correction_bias, uint8_t* topk_weights, uint8_t* topk_ids,
   uint8_t* cpu_hidden_states, uint8_t* hidden_states, uint8_t* gate_weight,
   int64_t topk_in,
@@ -756,7 +785,7 @@ void esimd_grouped_topk_fuse_with_gate(
     topk_in, topk_group_in, num_expert_group_in, input_len, renormalize, routed_scaling_factor, dpcpp_queue);
 }
 
-void esimd_rotary_pos_emb_ds(uint8_t* qState, uint8_t* kState, uint8_t* cos_sin_cache, uint8_t* positions, uint8_t* offsets,
+inline void esimd_rotary_pos_emb_ds(uint8_t* qState, uint8_t* kState, uint8_t* cos_sin_cache, uint8_t* positions, uint8_t* offsets,
  int num_heads_q, int hidden_dim_q, int hd_stride_q,
  int num_heads_kv, int hidden_dim_kv, int hd_stride_kv, int head_hd_stride_kv, int input_len, int has_offset, sycl::queue& dpcpp_queue) {
 
@@ -783,7 +812,7 @@ void esimd_rotary_pos_emb_ds(uint8_t* qState, uint8_t* kState, uint8_t* cos_sin_
 
 }
 
-void esimd_grouped_topk_kimi(
+inline void esimd_grouped_topk_kimi(
   uint8_t* gating_output, uint8_t* correction_bias, uint8_t* topk_weights, uint8_t* topk_ids,
   uint8_t* cpu_hidden_states, uint8_t* hidden_states,
   int64_t topk_in,
@@ -1020,7 +1049,7 @@ void esimd_grouped_topk_kimi(
 }
 
 
-void esimd_grouped_topk_fuse_with_gate_kimi(
+inline void esimd_grouped_topk_fuse_with_gate_kimi(
   uint8_t* gating_output, uint8_t* correction_bias, uint8_t* topk_weights, uint8_t* topk_ids,
   uint8_t* cpu_hidden_states, uint8_t* hidden_states, uint8_t* gate_weight,
   int64_t topk_in,
@@ -1066,7 +1095,7 @@ void esimd_grouped_topk_fuse_with_gate_kimi(
     topk_in, topk_group_in, num_expert_group_in, input_len, renormalize, routed_scaling_factor, dpcpp_queue);
 }
 
- void esimd_updateKV_indexed(
+ inline void esimd_updateKV_indexed(
   uint8_t* kv_cache, uint8_t* loc, uint8_t* kv_input,
   int64_t kv_hd,
   int64_t kv_stride,
@@ -1139,6 +1168,44 @@ void esimd_grouped_topk_fuse_with_gate_kimi(
 
 }
 
+inline void esimd_sdpa_mla_mega(
+    uint8_t* loc,
+    uint8_t* kv_input,
+    uint8_t* query,
+    uint8_t* key,    //kv_cache
+    uint8_t* value,
+    uint8_t* kv_indptr, 
+    uint8_t* kv_indices,
+    uint8_t* sdp_tmp,
+    uint8_t* attn_mask,
+    uint8_t* output,
+    int64_t num_heads,
+    int64_t num_heads_kv,
+    int64_t batch_idx,
+    int64_t qk_dim,
+    int64_t v_dim,
+    int64_t kv_hd,
+    int64_t kv_stride,
+    int64_t update_len,
+    float attn_scale,
+    float beta,
+    sycl::queue& dpcpp_queue) {
+  if (num_heads % num_heads_kv != 0)
+  {
+    printf("sdpa num_heads & num_heads_kv != 0 !!\n");
+  }
+  if (!(qk_dim == 576 && v_dim == 512 ))
+  {
+    printf("sdpa not support hidden_dim %lld, %lld !!\n", qk_dim, v_dim);
+  }
+
+  esimd_updateKV_indexed(key, loc, kv_input, kv_hd, kv_stride, update_len, dpcpp_queue);
+
+  for(int i = 0; i < batch_idx; i++) {
+    sdp_esimd_kernel_with_reduce_fp16I_fp16O<576, 512, 256>(num_heads, num_heads_kv, i, query, key, value, (uint32_t*) kv_indptr, (uint32_t*)kv_indices, sdp_tmp, attn_mask, output, attn_scale, beta, dpcpp_queue);
+  }
+}
+
 at::Tensor esimd_kernel_uni(
     at::Tensor _p0,
     at::Tensor _p1,
@@ -1195,11 +1262,17 @@ at::Tensor esimd_kernel_uni(
         case 1013:
           esimd_sdpa_normal_with_reduce(p0, p1, p2, p3, p4, p5, p6, p7, i1, i2, i3, i4, i5, f0, f1, dpcpp_queue);
         break;
+        case 1014: 
+          esimd_sdpa_mla_mega(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, i1, i2, i3, i4, i5, i6, i7, i8, f0, f1, dpcpp_queue);
+        break;
+        case 1015: 
+          esimd_cat_qk(p0, p1, p2, p3, p4, p5, i1, i2, i3, i4, i5, dpcpp_queue);
+        break;
         case 1108:   // rms norm w/ residual add
           esimd_residual_kernel_rms_norm(p0, p1, p2, p3, i1, i2, i3, f0, dpcpp_queue);
         break;
         case 1109:   // rms norm w/ residual add
-          esimd_residual_kernel_rms_norm_kq(p0, p1, p2, p3, p4, p5, i1, i2, i3, f0, f1, dpcpp_queue);
+          esimd_residual_kernel_rms_norm_kq(p0, p1, p2, p3, p4, p5, i1, i2, i3, i4, f0, f1, dpcpp_queue);
         break;
         case 1110:
           esimd_grouped_topk(p0, p1, p2, p3, nullptr, nullptr, i1, i2, i3, i4, i5, f0, dpcpp_queue);
@@ -1218,6 +1291,170 @@ at::Tensor esimd_kernel_uni(
         break;
         case 1112:
           esimd_updateKV_indexed(p0, p1, p2, i1, i2, i3, dpcpp_queue);
+        break;
+        default:
+          printf("---------- esimd kernel op not supported, op is %lld ----------\n", i0);
+        break;
+      }
+      return _p9;
+    }
+
+inline void esimd_mla_mega(
+    uint8_t* input_norm_weight,         //[header,seq,dim]
+    uint8_t* lora_a_weight,             //[seq,header,dim] + stride 192
+    uint8_t* lora_a_weight_scale,       //[seq,header,dim]
+    uint8_t* lora_a_norm_q_weight,          //[seq,header,dim] + stride 2112
+    uint8_t* lora_a_norm_kv_weight,          //[seq,header,dim] + stride 2112
+    uint8_t* lora_b_q_weight,
+    uint8_t* lora_b_q_weight_scale,
+    uint8_t* w_kc_fp8,
+    uint8_t* cos_sin_cache,
+    uint8_t* positions,
+    uint8_t* lora_a_bias_in, 
+    uint8_t* lora_b_bias_in,
+    uint8_t* hidden_states,
+    uint8_t* residual,
+    uint8_t* q_out,
+    uint8_t* k_out,
+    uint8_t* k_nope,
+    uint8_t* intermedia_results,
+    int64_t hidden_size,
+    int64_t seq_len,
+    int64_t add_residual,  // input len
+    int64_t lora_a_dim,  //2112
+    int64_t block_n,
+    int64_t block_k,
+    int64_t lora_a_has_bias, 
+    int64_t lora_b_has_bias,
+    int64_t q_lora_rank,   //1536
+    int64_t kv_lora_rank,   //512
+    int64_t q_header_num,
+    int64_t kv_header_num,
+    int64_t qk_head_dim,    //192
+    int64_t qk_rope_head_dim, //64
+    float input_norm_epsilon, 
+    float q_a_norm_epsilon, 
+    float kv_a_norm_epsilon, 
+    float bmm_w_scale,
+    sycl::queue& dpcpp_queue) {
+
+  //input norm
+  uint8_t* result_input_norm = intermedia_results; //hidden_states_out
+  esimd_residual_kernel_rms_norm(input_norm_weight, residual, hidden_states, result_input_norm, hidden_size, seq_len, add_residual, input_norm_epsilon, dpcpp_queue);
+  
+  //Lora A
+  // M, K, N: 7,7168,2112
+  uint8_t* result_lora_a = result_input_norm + seq_len * hidden_size * sizeof(sycl::half); //qkv_a_proj
+  GEMV_a16_wfp8_block_host(result_input_norm, lora_a_weight, lora_a_weight_scale, lora_a_bias_in, result_lora_a, seq_len, lora_a_dim, hidden_size, 1, block_n, block_k, lora_a_has_bias, dpcpp_queue);
+
+  // A Norm
+  uint8_t* input_q_proj = result_lora_a;   //q_proj
+  uint8_t* input_k_nope_proj = result_lora_a + q_lora_rank * sizeof(sycl::half);   //k_nope_proj
+  uint8_t* result_lora_a_norm_q = result_lora_a + seq_len * lora_a_dim * sizeof(sycl::half);  //q
+  //uint8_t* result_lora_a_norm_k = result_lora_a_norm_q + seq_len * q_lora_rank * sizeof(sycl::half);   //k_nope
+  esimd_residual_kernel_rms_norm_kq(lora_a_norm_q_weight, lora_a_norm_kv_weight, input_q_proj, input_k_nope_proj, result_lora_a_norm_q, /*result_lora_a_norm_k*/ k_nope, q_lora_rank, kv_lora_rank, seq_len, lora_a_dim, q_a_norm_epsilon, kv_a_norm_epsilon, dpcpp_queue);
+  
+  //Lora B
+  uint8_t* result_lora_b = result_lora_a_norm_q + seq_len * q_lora_rank * sizeof(sycl::half);  //q_b_proj
+  //uint8_t* result_lora_b = result_lora_a_norm_k + seq_len * kv_lora_rank * sizeof(sycl::half);  //q_b_proj
+  // M, K, N: 7,1536,128*192
+  GEMV_a16_wfp8_block_host(result_lora_a_norm_q, lora_b_q_weight, lora_b_q_weight_scale, lora_b_bias_in, result_lora_b, seq_len, q_header_num*qk_head_dim, q_lora_rank, 1, block_n, block_k, lora_b_has_bias, dpcpp_queue);
+  
+  // BMM
+  uint8_t* input_q_nope = result_lora_b;   //q_nope
+  uint8_t* result_bmm = result_lora_b + seq_len * q_header_num*qk_head_dim * sizeof(sycl::half);   //q_nope_out
+  // M, K, N: (7, 128, 512)
+  BMM_GEMV_a16_wfp8_block_host(input_q_nope, w_kc_fp8, result_bmm, seq_len, kv_lora_rank, (qk_head_dim - qk_rope_head_dim), qk_head_dim, q_header_num, bmm_w_scale, dpcpp_queue);  
+  
+  // RoPE
+  uint8_t* input_q_pe = result_lora_b + (qk_head_dim - qk_rope_head_dim) * sizeof(sycl::half);   //q_pe
+  uint8_t* input_k_pe = input_k_nope_proj + kv_lora_rank * sizeof(sycl::half);   //k_pe              
+  esimd_rotary_pos_emb_ds(input_q_pe, input_k_pe, cos_sin_cache, positions, positions, q_header_num, qk_rope_head_dim, qk_head_dim, kv_header_num, qk_rope_head_dim, qk_rope_head_dim, lora_a_dim, seq_len, 0, dpcpp_queue);
+  
+  //cat
+  esimd_cat<fp16, 512, 64>(result_bmm, input_q_pe, k_nope, input_k_pe, q_out, k_out, seq_len, q_header_num, kv_header_num, qk_head_dim, lora_a_dim,  dpcpp_queue);
+
+}
+
+
+at::Tensor esimd_kernel_uni_large_params(
+    at::Tensor _p0,
+    at::Tensor _p1,
+    at::Tensor _p2,
+    at::Tensor _p3,
+    at::Tensor _p4,
+    at::Tensor _p5,
+    at::Tensor _p6,
+    at::Tensor _p7,
+    at::Tensor _p8,
+    at::Tensor _p9,
+    at::Tensor _p10,
+    at::Tensor _p11,
+    at::Tensor _p12,
+    at::Tensor _p13,
+    at::Tensor _p14,
+    at::Tensor _p15,
+    at::Tensor _p16,
+    at::Tensor _p17,
+    at::Tensor _p18,
+    at::Tensor _p19,
+
+    int64_t i0,
+    int64_t i1,
+    int64_t i2,
+    int64_t i3,
+    int64_t i4,
+    int64_t i5,
+    int64_t i6,
+    int64_t i7,
+    int64_t i8,
+    int64_t i9,
+    int64_t i10,
+    int64_t i11,
+    int64_t i12,
+    int64_t i13,
+    int64_t i14,
+    int64_t i15,
+    int64_t i16,
+    int64_t i17,
+    int64_t i18,
+    int64_t i19,
+
+    double f0,
+    double f1,
+    double f2,
+    double f3,
+    double f4
+    )
+    {
+    auto p0 = reinterpret_cast<uint8_t*>(_p0.data_ptr());
+    auto p1 = reinterpret_cast<uint8_t*>(_p1.data_ptr());
+    auto p2 = reinterpret_cast<uint8_t*>(_p2.data_ptr());
+    auto p3 = reinterpret_cast<uint8_t*>(_p3.data_ptr());
+    auto p4 = reinterpret_cast<uint8_t*>(_p4.data_ptr());
+    auto p5 = reinterpret_cast<uint8_t*>(_p5.data_ptr());
+    auto p6 = reinterpret_cast<uint8_t*>(_p6.data_ptr());
+    auto p7 = reinterpret_cast<uint8_t*>(_p7.data_ptr());
+    auto p8 = reinterpret_cast<uint8_t*>(_p8.data_ptr());
+    auto p9 = reinterpret_cast<uint8_t*>(_p9.data_ptr());
+    auto p10 = reinterpret_cast<uint8_t*>(_p10.data_ptr());
+    auto p11 = reinterpret_cast<uint8_t*>(_p11.data_ptr());
+    auto p12 = reinterpret_cast<uint8_t*>(_p12.data_ptr());
+    auto p13 = reinterpret_cast<uint8_t*>(_p13.data_ptr());
+    auto p14 = reinterpret_cast<uint8_t*>(_p14.data_ptr());
+    auto p15 = reinterpret_cast<uint8_t*>(_p15.data_ptr());
+    auto p16 = reinterpret_cast<uint8_t*>(_p16.data_ptr());
+    auto p17 = reinterpret_cast<uint8_t*>(_p17.data_ptr());
+    auto p18 = reinterpret_cast<uint8_t*>(_p18.data_ptr());
+    auto p19 = reinterpret_cast<uint8_t*>(_p19.data_ptr());
+    auto stream = at::xpu::getCurrentXPUStream();
+    auto dpcpp_queue = stream.queue();
+
+      switch(i0){
+        case 1000:
+          esimd_mla_mega(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17,
+          i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, i11, i12, i13, i14,
+          f0, f1, f2, f3, dpcpp_queue);
         break;
         default:
           printf("---------- esimd kernel op not supported, op is %lld ----------\n", i0);

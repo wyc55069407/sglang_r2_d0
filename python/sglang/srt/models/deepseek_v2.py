@@ -133,8 +133,9 @@ if _use_aiter:
 enable_esimd_norm_rope_opt = bool(int(os.getenv("ENABLE_ESIMD_NORM_ROPE_OPT", "0")))
 enable_esimd_bmm_opt = bool(int(os.getenv("ENABLE_ESIMD_FP8_GEMM_OPT", "0")))
 if enable_esimd_norm_rope_opt or enable_esimd_bmm_opt:
-    from sgl_kernel_esimd import esimd_kernel_uni, esimd_mul_scale_factor_and_add
+    from sgl_kernel_esimd import esimd_kernel_uni, esimd_mul_scale_factor_and_add, esimd_kernel_uni_large_params
 enable_esimd_opt = bool(int(os.getenv("ENABLE_ESIMD_TOPK_OPT", "0")))
+enable_mega_kernel_opt = bool(int(os.getenv("ENABLE_MEGA_OPT", "0")))
 
 logger = logging.getLogger(__name__)
 
@@ -873,7 +874,7 @@ class DeepseekV2AttentionMLA(nn.Module):
         self.scaling = self.qk_head_dim**-0.5
         self.rope_theta = rope_theta
         self.max_position_embeddings = max_position_embeddings
-
+        
         # For tensor parallel attention
         if self.q_lora_rank is not None:
             self.fused_qkv_a_proj_with_mqa = ReplicatedLinear(
@@ -1107,17 +1108,23 @@ class DeepseekV2AttentionMLA(nn.Module):
                 return _dispatch_mla_subtype()
 
     def op_prepare(self, state):
-        state.attn_intermediate_state = self.forward_prepare(
-            positions=state.positions,
-            hidden_states=state.pop("hidden_states_after_comm_pre_attn"),
-            forward_batch=state.forward_batch,
-            zero_allocator=state.zero_allocator,
-        )
+        if hasattr(state, "is_mega") and state.is_mega:
+            state.attn_intermediate_state = state.pop("hidden_states_after_comm_pre_attn")
+        else:
+            state.attn_intermediate_state = self.forward_prepare(
+                positions=state.positions,
+                hidden_states=state.pop("hidden_states_after_comm_pre_attn"),
+                forward_batch=state.forward_batch,
+                zero_allocator=state.zero_allocator,
+            )
 
     def op_core(self, state):
-        state.hidden_states_after_attn = self.forward_core(
-            state.pop("attn_intermediate_state")
-        )
+        if hasattr(state, "is_mega") and state.is_mega:
+            state.hidden_states_after_attn = state.pop("attn_intermediate_state")
+        else:
+            state.hidden_states_after_attn = self.forward_core(
+                state.pop("attn_intermediate_state")
+            )
 
     def forward(
         self,
@@ -1351,13 +1358,269 @@ class DeepseekV2AttentionMLA(nn.Module):
 
         return output
 
+    def forward_absorb_esimd_mega(
+        self,
+        positions: torch.Tensor,
+        hidden_states: torch.Tensor,
+        forward_batch: ForwardBatch,
+        residual: Optional[torch.Tensor],
+        input_layernorm:RMSNorm,
+        zero_allocator: BumpAllocator,
+    ):
+        if hidden_states.shape[0] == 0:
+            residual = hidden_states
+        else:
+            add_residual = 0
+            if residual is None:
+                residual = hidden_states
+            else:
+                add_residual = 1
+            hidden_states_out = torch.empty_like(hidden_states)  # non-keep
+            #
+            esimd_kernel_uni(
+                input_layernorm.weight, residual, hidden_states, hidden_states_out, hidden_states_out, hidden_states_out,
+                hidden_states_out, hidden_states_out, hidden_states_out, hidden_states_out,  # weight, residual, hidden_states
+                1108, hidden_states.shape[-1], hidden_states.shape[-2], add_residual, 0, 0, 0, 0, 0, 0, # hidden size, add_residual
+                input_layernorm.variance_epsilon, 1.0, 1.0, 1.0, 1.0)   # self.variance_epsilon
+            hidden_states = hidden_states_out
+        # qkv LoraA fused projection ,  7168 -> 2112 (1536_q, 512_k_nope, 64_k_pe)
+        # RMSNorm_k_nope_q
+        # q_loraB proj   1536 -> 128*192  (128_q_nope,  64_q_pe)
+        # q_nope_out = bGEMV  128 * 128 -> 128 * 512
+        # q_pe, k_pe = roPE
+        M = hidden_states.shape[-2]
+        N = self.fused_qkv_a_proj_with_mqa.weight.shape[-2]
+        K = hidden_states.shape[-1]
+        bias = self.fused_qkv_a_proj_with_mqa.bias if not self.fused_qkv_a_proj_with_mqa.skip_bias_add else None
+        has_bias = 0
+        bias_in = hidden_states
+        if bias is not None:
+            has_bias = 1
+            bias_in = bias
+        block_k = self.fused_qkv_a_proj_with_mqa.quant_method.quant_config.weight_block_size[0]
+        block_n = self.fused_qkv_a_proj_with_mqa.quant_method.quant_config.weight_block_size[1]
+        qkv_a_proj = torch.empty(M, N, device=hidden_states.device, dtype=hidden_states.dtype) # keep
+
+        # aproj GEMV
+        esimd_kernel_uni(hidden_states, self.fused_qkv_a_proj_with_mqa.weight,
+            self.fused_qkv_a_proj_with_mqa.weight_scale_inv, bias_in, qkv_a_proj,
+            qkv_a_proj, qkv_a_proj, qkv_a_proj, qkv_a_proj, qkv_a_proj,
+            5000, M, N, K, 1, block_n, block_k, has_bias, 1, 1, 1.0, 1.0, 1.0, 1.0, 1.0)
+
+        q_proj, latent_cache = qkv_a_proj.split(
+            [self.q_lora_rank, self.kv_lora_rank + self.qk_rope_head_dim], dim=-1
+        )
+        k_nope_proj = latent_cache[..., : self.kv_lora_rank]
+
+        q = torch.empty_like(q_proj) # non-keep
+        k_nope = torch.empty_like(k_nope_proj) # keep
+
+        # RMSNorm
+        esimd_kernel_uni(
+            self.q_a_layernorm.weight, self.kv_a_layernorm.weight, q_proj, k_nope_proj, q, k_nope,
+            k_nope, k_nope, k_nope, k_nope,  # weight, residual, hidden_states
+            1109, q.shape[-1], k_nope.shape[-1], q.shape[-2], q_proj.stride()[-2], 0, 0, 0, 0, 0, # hidden size, add_residual
+            self.q_a_layernorm.variance_epsilon, self.kv_a_layernorm.variance_epsilon, 1.0, 1.0, 1.0)
+
+        M = q.shape[-2]  #([7, 1536])
+        N = self.q_b_proj.weight.shape[-2]  #[24576, 1536]
+        K = q.shape[-1]
+        bias = self.q_b_proj.bias if not self.q_b_proj.skip_bias_add else None
+        has_bias = 0
+        bias_in = q
+        if bias is not None:
+            has_bias = 1
+            bias_in = bias
+        block_k = self.q_b_proj.quant_method.quant_config.weight_block_size[0]
+        block_n = self.q_b_proj.quant_method.quant_config.weight_block_size[1]
+        q_b_proj = torch.empty(M, N, device=hidden_states.device, dtype=hidden_states.dtype)
+        # bproj GEMV
+        esimd_kernel_uni(q, self.q_b_proj.weight,
+            self.q_b_proj.weight_scale_inv, bias_in, q_b_proj,
+            q_b_proj, q_b_proj, q_b_proj, q_b_proj, q_b_proj,
+            5000, M, N, K, 1, block_n, block_k, has_bias, 1, 1, 1.0, 1.0, 1.0, 1.0, 1.0)
+        
+        k_nope = k_nope.unsqueeze(1)
+        q = q_b_proj.view(-1, self.num_local_heads, self.qk_head_dim)
+
+        q_nope, q_pe = q.split([self.qk_nope_head_dim, self.qk_rope_head_dim], dim=-1)
+        k_pe = latent_cache[..., self.kv_lora_rank :].unsqueeze(1)
+
+        M = q_nope.shape[-3]
+        N = self.w_kc_fp8.shape[-1]
+        K = q_nope.shape[-1]
+        K_stride = q_nope.stride()[-2]
+
+        batch = 1
+        if len(q_nope.shape) == 3:
+            batch = q_nope.shape[-2]
+            q_nope_out = torch.empty(q_nope.shape[1], M, N, device=q_nope.device, dtype=q_nope.dtype) # non-keep
+        else:
+            print("fp8_bmm_opt input shape not supported")
+
+        #BMM,  Mx128x128 ->Mx128x512 
+        esimd_kernel_uni(q_nope, self.w_kc_fp8, q_nope_out, q_nope_out, q_nope_out, q_nope_out, q_nope_out, q_nope_out, q_nope_out, q_nope_out,
+            5001, M, N, K, K_stride, batch, 1, 1, 1, 1, self.w_scale_item, 1.0, 1.0, 1.0, 1.0)
+
+        q_nope_out = q_nope_out.transpose(0, 1)
+
+        query_f = q_pe
+        key_f = k_pe
+
+        # need meet query stride limitation or will clone, 24576 = 192*128
+        if query_f.stride()[-3] != query_f.stride()[-2] * query_f.shape[-2]:
+            query_f = q_pe.clone()
+        # RoPE
+        esimd_kernel_uni(
+            query_f, key_f, self.rotary_emb.cos_sin_cache, positions, positions,
+            positions, positions, positions, positions, positions,
+            1111, query_f.shape[-2], query_f.shape[-1], query_f.stride()[-2],
+            key_f.shape[-2], key_f.shape[-1], key_f.stride()[-2], key_f.stride()[-3], query_f.shape[0], 0,
+            1.0, 1.0, 1.0, 1.0, 1.0)
+        
+        if not hasattr(self, "q_tmp") or self.q_tmp.shape[0] != q_nope_out.shape[0]:
+            self.q_tmp = torch.empty(q_nope_out.shape[0], q_nope_out.shape[1], self.kv_lora_rank + self.qk_rope_head_dim,  device=q_nope_out.device, dtype=q_nope_out.dtype)
+            self.k_tmp = torch.empty(k_nope.shape[0], 1, self.kv_lora_rank + self.qk_rope_head_dim,  device=q_nope_out.device, dtype=q_nope_out.dtype)
+
+        # Cat fused
+        esimd_kernel_uni(q_nope_out, q_pe, k_nope, k_pe, self.q_tmp, self.k_tmp,self.k_tmp,self.k_tmp,self.k_tmp,self.k_tmp,
+                             1015, q_nope_out.shape[0], q_nope_out.shape[1], k_nope.shape[1], q_pe.stride(1), k_pe.stride(0), 1, 1, 1, 1, 1.0, 1.0, 1.0, 1.0, 1.0)
+        
+        #set_kv_buffer + sdpa  -> to submit in triton_backend.py
+        attn_output = self.attn_mqa(self.q_tmp, self.k_tmp, k_nope, forward_batch)  
+        attn_output = attn_output.view(-1, self.num_local_heads, self.kv_lora_rank)
+
+        #BMM
+        attn_bmm_output = self.fp8_bmm_opt(attn_output, self.w_vc_fp8, self.w_scale_item)
+        attn_output = attn_bmm_output.transpose(0, 1).flatten(1, 2)
+        
+        # o proj GEMV
+        output, _ = self.o_proj(attn_output)
+
+        return output, residual
+    
+    def forward_absorb_esimd_mega_cpp(
+        self,
+        positions: torch.Tensor,
+        hidden_states: torch.Tensor,
+        forward_batch: ForwardBatch,
+        residual: Optional[torch.Tensor],
+        input_layernorm:RMSNorm,
+        zero_allocator: BumpAllocator,
+        is_tbo: False
+    ):
+        q_out = torch.empty(hidden_states.shape[-2], self.num_local_heads, self.kv_lora_rank + self.qk_rope_head_dim,  device=hidden_states.device, dtype=hidden_states.dtype)
+        k_out = torch.empty(hidden_states.shape[-2], 1, self.kv_lora_rank + self.qk_rope_head_dim,  device=hidden_states.device, dtype=hidden_states.dtype)
+        k_nope = torch.empty(hidden_states.shape[-2], 1, self.kv_lora_rank,  device=hidden_states.device, dtype=hidden_states.dtype)
+        # 7168 + 2112 + 1536 (+512) + 128*192 + 128*512
+        total_size = self.hidden_size + self.fused_qkv_a_proj_with_mqa.weight.shape[-2] + self.q_lora_rank + self.q_b_proj.weight.shape[-2] + self.num_local_heads*self.w_kc_fp8.shape[-1]
+        results = torch.empty(hidden_states.shape[-2], total_size, device=hidden_states.device, dtype=hidden_states.dtype)
+
+
+        add_residual = 0
+        if residual is None:
+            residual = hidden_states
+        else:
+            add_residual = 1
+
+        bias = self.fused_qkv_a_proj_with_mqa.bias if not self.fused_qkv_a_proj_with_mqa.skip_bias_add else None
+        lora_a_has_bias = 0
+        lora_a_bias_in = hidden_states
+        if bias is not None:
+            lora_a_has_bias = 1
+            lora_a_bias_in = bias
+        bias = self.q_b_proj.bias if not self.q_b_proj.skip_bias_add else None
+        lora_b_has_bias = 0
+        lora_b_bias_in = hidden_states
+        if bias is not None:
+            lora_b_has_bias = 1
+            lora_b_bias_in = bias
+        block_k = self.fused_qkv_a_proj_with_mqa.quant_method.quant_config.weight_block_size[0]
+        block_n = self.fused_qkv_a_proj_with_mqa.quant_method.quant_config.weight_block_size[1]
+
+        esimd_kernel_uni_large_params(
+            input_layernorm.weight, self.fused_qkv_a_proj_with_mqa.weight, self.fused_qkv_a_proj_with_mqa.weight_scale_inv, self.q_a_layernorm.weight, self.kv_a_layernorm.weight,
+            self.q_b_proj.weight, self.q_b_proj.weight_scale_inv, self.w_kc_fp8, self.rotary_emb.cos_sin_cache, positions,
+            lora_a_bias_in, lora_b_bias_in, hidden_states, residual, q_out, k_out, k_nope, 
+            results, results, results,
+            1000, hidden_states.shape[-1], hidden_states.shape[-2], add_residual,         #7168， seq_len
+            self.fused_qkv_a_proj_with_mqa.weight.shape[-2], block_n, block_k, #2112, (128,128)
+            lora_a_has_bias, lora_b_has_bias,
+            self.q_lora_rank, self.kv_lora_rank, self.num_local_heads, 1, self.qk_head_dim, self.qk_rope_head_dim,    #1536, 512, 128, 192, 64
+            0, 0,0,0,0,
+            input_layernorm.variance_epsilon, self.q_a_layernorm.variance_epsilon, self.kv_a_layernorm.variance_epsilon, self.w_scale_item, 1.0, )
+
+        #set_kv_buffer + sdpa  -> submit in triton_backend.py
+        if forward_batch.forward_mode.is_decode():
+            if is_tbo:
+                backend = forward_batch.attn_backend.primary
+            else:
+                backend = forward_batch.attn_backend
+            
+            if self.attn_mqa.sliding_window_size is not None and self.attn_mqa.sliding_window_size > -1:
+                kv_indptr = backend.forward_metadata.window_kv_indptr
+                kv_indices = backend.forward_metadata.window_kv_indices
+            else:
+                kv_indptr = backend.forward_metadata.kv_indptr
+                kv_indices = backend.forward_metadata.kv_indices
+                                   
+            B = kv_indptr.shape[0] - 1
+
+            attn_output = torch.empty(q_out.shape[0], q_out.shape[1], k_nope.shape[-1] , device=hidden_states.device, dtype=hidden_states.dtype)
+            sdp_tmp = torch.empty(q_out.shape[-2], 512, k_nope.shape[-1], device=hidden_states.device, dtype=torch.float32) # max to alloc 
+
+            layer_id = self.attn_mqa.layer_id
+            if 0:
+                # forward_batch.token_to_kv_pool.set_kv_buffer(
+                #     self.attn_mqa, forward_batch.out_cache_loc, k_out, k_nope
+                #     )
+                esimd_kernel_uni(
+                    forward_batch.token_to_kv_pool.get_key_buffer(layer_id), forward_batch.out_cache_loc, k_out, 
+                    k_out, k_out, k_out, k_out, k_out, k_out, k_out,
+                    1112, k_out.shape[-1], k_out.stride()[0], forward_batch.out_cache_loc.shape[0], 
+                    1, 1, 1, 1, 1, 1, 1.0, 1.0, 1.0, 1.0, 1.0)
+                    
+                for batch_idx in range(B):  # B
+                    esimd_kernel_uni(
+                        q_out, 
+                        forward_batch.token_to_kv_pool.get_key_buffer(layer_id),
+                        forward_batch.token_to_kv_pool.get_value_buffer(layer_id),
+                        kv_indptr, kv_indices, sdp_tmp, attn_output, attn_output, attn_output, attn_output,
+                        1013, q_out.shape[-2], k_out.shape[-2], batch_idx,  k_out.shape[-1], k_nope.shape[-1], 
+                        0, 0, 0, 0,    
+                        self.attn_mqa.scaling, 1.0, 1.0, 1.0, 1.0)
+            else:
+                esimd_kernel_uni(
+                    forward_batch.out_cache_loc,
+                    k_out,
+                    q_out, 
+                    forward_batch.token_to_kv_pool.get_key_buffer(layer_id),
+                    forward_batch.token_to_kv_pool.get_value_buffer(layer_id),
+                    kv_indptr, kv_indices, sdp_tmp, attn_output,attn_output,
+                    1014, q_out.shape[-2], k_out.shape[-2], B,  k_out.shape[-1], k_nope.shape[-1], 
+                    k_out.shape[-1], k_out.stride()[0], forward_batch.out_cache_loc.shape[0], 0,    
+                    self.attn_mqa.scaling, 1.0, 1.0, 1.0, 1.0)
+        else:
+            attn_output = self.attn_mqa(q_out, k_out, k_nope, forward_batch)  
+
+        attn_output = attn_output.view(-1, self.num_local_heads, self.kv_lora_rank)
+
+        #BMM
+        attn_bmm_output = self.fp8_bmm_opt(attn_output, self.w_vc_fp8, self.w_scale_item)
+        attn_output = attn_bmm_output.transpose(0, 1).flatten(1, 2)
+        
+        # o proj GEMV
+        output, _ = self.o_proj(attn_output)
+
+        return output, residual
+    
     def forward_absorb_prepare(
         self,
         positions: torch.Tensor,
         hidden_states: torch.Tensor,
         forward_batch: ForwardBatch,
         zero_allocator: BumpAllocator,
-    ):
+    ):       
         from sglang.srt.model_executor.cuda_graph_runner import get_is_capture_mode
 
         if self.q_lora_rank is not None:
@@ -2028,16 +2291,33 @@ class DeepseekV2DecoderLayer(nn.Module):
         residual: Optional[torch.Tensor],
         zero_allocator: BumpAllocator,
     ) -> torch.Tensor:
-        hidden_states, residual = self.layer_communicator.prepare_attn(
-            hidden_states, residual, forward_batch
-        )
+        attn_forward_method = self.self_attn.dispatch_attn_forward_method(forward_batch)
+        if enable_mega_kernel_opt and attn_forward_method == AttnForwardMethod.MLA and \
+            hidden_states.shape[-2] <= 8 and \
+            self.self_attn.q_lora_rank is not None:
 
-        hidden_states = self.self_attn(
-            positions=positions,
-            hidden_states=hidden_states,
-            forward_batch=forward_batch,
-            zero_allocator=zero_allocator,
-        )
+            # hidden_states, residual = self.self_attn.forward_absorb_esimd_mega(
+            hidden_states, residual = self.self_attn.forward_absorb_esimd_mega_cpp(
+                positions=positions,
+                hidden_states=hidden_states,
+                forward_batch=forward_batch,
+                residual=residual,
+                input_layernorm=self.input_layernorm,
+                zero_allocator=zero_allocator, 
+                is_tbo=self.is_heto,
+            )
+
+        else:
+            hidden_states, residual = self.layer_communicator.prepare_attn(
+                hidden_states, residual, forward_batch
+            )
+
+            hidden_states = self.self_attn(
+                positions=positions,
+                hidden_states=hidden_states,
+                forward_batch=forward_batch,
+                zero_allocator=zero_allocator,
+            )
 
         hidden_states, residual = self.layer_communicator.prepare_mlp(
             hidden_states, residual, forward_batch
@@ -2061,16 +2341,43 @@ class DeepseekV2DecoderLayer(nn.Module):
         zero_allocator: BumpAllocator,
         tbo_subbatch_index: Optional[int] = None,
     ):
-        state.hidden_states_after_comm_pre_attn, state.residual_after_input_ln = (
-            self.layer_communicator.prepare_attn(hidden_states, residual, forward_batch)
-        )
-        state.update(
-            dict(
-                forward_batch=forward_batch,
-                positions=positions,
-                zero_allocator=zero_allocator,
-                tbo_subbatch_index=tbo_subbatch_index,
+        attn_forward_method = self.self_attn.dispatch_attn_forward_method(forward_batch)
+        if enable_mega_kernel_opt and attn_forward_method == AttnForwardMethod.MLA and \
+            hidden_states.shape[-2] <= 8 and \
+            self.self_attn.q_lora_rank is not None:
+
+            state.update(
+                dict(
+                    forward_batch=forward_batch,
+                    positions=positions,
+                    zero_allocator=zero_allocator,
+                    tbo_subbatch_index=tbo_subbatch_index,
+                )
             )
+
+            # hidden_states, residual = self.self_attn.forward_absorb_esimd_mega(
+            state.hidden_states_after_comm_pre_attn, state.residual_after_input_ln = self.self_attn.forward_absorb_esimd_mega_cpp(
+                positions=state.positions,
+                hidden_states=hidden_states,
+                forward_batch=state.forward_batch,
+                residual=residual,
+                input_layernorm=self.input_layernorm,
+                zero_allocator=state.zero_allocator,
+                is_tbo=False,
+            )
+            state.is_mega = True
+        else:
+            state.is_mega = False
+            state.hidden_states_after_comm_pre_attn, state.residual_after_input_ln = (
+                self.layer_communicator.prepare_attn(hidden_states, residual, forward_batch)
+            )
+            state.update(
+                dict(
+                    forward_batch=forward_batch,
+                    positions=positions,
+                    zero_allocator=zero_allocator,
+                    tbo_subbatch_index=tbo_subbatch_index,
+                )
         )
 
     def op_comm_prepare_mlp(self, state):
@@ -2117,6 +2424,7 @@ class DeepseekV2DecoderLayer(nn.Module):
                 "forward_batch",
                 "zero_allocator",
                 "tbo_subbatch_index",
+                "is_mega",
             }
         )
         return output
@@ -2162,6 +2470,9 @@ class DeepseekV2Model(nn.Module):
             global_server_args_dict["enable_two_batch_overlap"]
             and global_server_args_dict["two_batch_overlap_mode"] == "heto"
         )
+
+        for layer_id in range(config.num_hidden_layers):
+            self.layers[layer_id].is_heto = self.is_heto # and layer_id >= self.first_k_dense_replace
 
     def get_input_embeddings(self) -> torch.Tensor:
         return self.embed_tokens
@@ -2422,6 +2733,10 @@ class DeepseekV2ForCausalLM(nn.Module):
                         w, scale = block_quant_to_tensor_quant(
                             weight, weight_scale, weight_block_size
                         )
+                        # # YC WA
+                        # torch.manual_seed(42)
+                        # w = w.to(torch.float16).uniform_(-0.2, 0.2).to(w.dtype)
+                        # scale = scale.uniform_(-0.1, 0.1)
                         self_attn.w_scale = scale
 
                 else:

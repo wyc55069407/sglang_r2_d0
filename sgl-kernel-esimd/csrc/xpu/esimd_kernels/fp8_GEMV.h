@@ -20,7 +20,7 @@
 //A (M, K),  W (N, K)
 template<typename IT, uint32_t NT, uint32_t HD, uint32_t PPG, typename ITS, 
 uint32_t scale_block_size_N, uint32_t scale_block_size_K, bool DEQUANT_TEST, uint32_t MAX_INPUT_M>
-void GEMV_a16_wfp8_block(
+inline void GEMV_a16_wfp8_block(
   uint8_t* input_data,
   uint8_t* weight_data, 
   uint8_t* weight_scale_data,
@@ -276,7 +276,7 @@ void GEMV_a16_wfp8_block(
 
 //A (M, K),  W (N, K)
 template<typename IT, uint32_t NT, uint32_t HD, uint32_t PPG, uint32_t MAX_INPUT_M>
-void BMM_GEMV_a16_wfp8_block(
+inline void BMM_GEMV_a16_wfp8_block(
   uint8_t* input_data,
   uint8_t* weight_data,
   uint8_t* output_data,
