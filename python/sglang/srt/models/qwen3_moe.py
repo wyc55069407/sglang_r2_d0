@@ -101,6 +101,11 @@ class Qwen3MoeSparseMoeBlock(nn.Module):
                 f"Tensor parallel size {self.tp_size} is greater than "
                 f"the number of experts {config.num_experts}."
             )
+        
+        if global_server_args_dict["enable_ep_moe_heto"]:
+            additional_config = dict(
+                num_gpu_experts=global_server_args_dict["ep_moe_heto_gpu_experts"]
+            )
 
         self.experts = get_moe_impl_class()(
             num_experts=config.num_experts
@@ -112,11 +117,14 @@ class Qwen3MoeSparseMoeBlock(nn.Module):
             renormalize=config.norm_topk_prob,
             quant_config=quant_config,
             prefix=add_prefix("experts", prefix),
-            **(
-                dict(deepep_mode=DeepEPMode[global_server_args_dict["deepep_mode"]])
-                if global_server_args_dict["enable_deepep_moe"]
-                else {}
-            ),
+            num_expert_group=1,
+            topk_group=1,
+            **additional_config,
+            # **(
+            #     dict(deepep_mode=DeepEPMode[global_server_args_dict["deepep_mode"]])
+            #     if global_server_args_dict["enable_deepep_moe"]
+            #     else {}
+            # ),
         )
 
         self.gate = ReplicatedLinear(
@@ -174,6 +182,8 @@ class Qwen3MoeSparseMoeBlock(nn.Module):
         final_hidden_states = self.experts(
             hidden_states=hidden_states, router_logits=router_logits
         )
+        final_hidden_states = final_hidden_states[0]
+
         if self.tp_size > 1:
             final_hidden_states = tensor_model_parallel_all_reduce(final_hidden_states)
 
@@ -659,6 +669,7 @@ class Qwen3MoeModel(Qwen2MoeModel):
         quant_config: Optional[QuantizationConfig] = None,
         prefix: str = "",
     ) -> None:
+        # config.num_hidden_layers = 6
         super().__init__(
             config=config,
             quant_config=quant_config,

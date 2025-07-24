@@ -503,8 +503,10 @@ class DummyModelLoader(BaseModelLoader):
             # initialize_dummy_weights(model)
             import os
             current_pid = os.getpid()
-            initialize_dummy_weights(model, low = -1e-1, high = 1e-1, seed=1234)
-
+            # initialize_dummy_weights(model, low = -1e-1, high = 1e-1, seed=1234)
+            from sglang.srt.distributed import get_tensor_model_parallel_rank
+            rank = get_tensor_model_parallel_rank()
+            initialize_dummy_weights(model, low = -1e-1, high = 1e-1, seed=1234+rank)
             # Model weight loading consists of two stages:
             # 1. Initial weight loading.
             # 2. Post-processing of weights, including assigning specific member variables.

@@ -139,6 +139,15 @@ enable_mega_kernel_opt = bool(int(os.getenv("ENABLE_MEGA_OPT", "0")))
 
 logger = logging.getLogger(__name__)
 
+import time
+
+def busy_wait(microseconds):
+    target_time = time.perf_counter() + microseconds / 1_000_000
+    while time.perf_counter() < target_time:
+        pass
+from sglang.srt.distributed import get_tensor_model_parallel_rank
+enable_dummy_cpu_moe = bool(int(os.getenv("ENABLE_DUMMY_CPU_MOE", "0")))
+
 
 class AttnForwardMethod(IntEnum):
     # Use multi-head attention
@@ -380,6 +389,10 @@ class DeepseekV2MoE(nn.Module):
 
         self._enable_deepep_moe = global_server_args_dict["enable_deepep_moe"]
 
+        self.cpu_sorted_topk_weights = torch.empty(8, 8, dtype=torch.float32, device="cpu", pin_memory=True)
+        self.cpu_sorted_topk_ids = torch.empty(8, 8, dtype=torch.uint64, device="cpu", pin_memory=True)
+        self.cpu_hidden_states = torch.empty(8, 7168, dtype=torch.bfloat16, device="cpu", pin_memory=True)
+
     def get_moe_weights(self):
         return [
             x.data
@@ -402,6 +415,8 @@ class DeepseekV2MoE(nn.Module):
             return self.forward_cpu(hidden_states)
 
         n_tokens = hidden_states.shape[0]
+        if enable_dummy_cpu_moe and n_tokens > 8:
+            return hidden_states
         if enable_esimd_opt and n_tokens <= 8:
             # do not call gate and gate is fused w/ topk
             final_hidden_states = torch.empty(
@@ -416,6 +431,64 @@ class DeepseekV2MoE(nn.Module):
                 dtype=hidden_states.dtype,
                 device=hidden_states.device,
             )
+
+            # dummy experiment
+            if enable_dummy_cpu_moe:
+                flag = 1610
+
+                renormalize_weight = 1
+                esimd_kernel_uni(
+                    router_logits,
+                    self.experts.correction_bias,
+                    self.cpu_sorted_topk_weights,
+                    self.cpu_sorted_topk_ids,
+                    self.cpu_hidden_states,
+                    hidden_states,
+                    self.gate.weight,
+                    hidden_states,
+                    hidden_states,
+                    hidden_states,
+                    flag,
+                    8, #self.top_k,
+                    4, #self.topk_group,
+                    8, #self.num_expert_group,
+                    n_tokens,
+                    renormalize_weight,
+                    0,
+                    0,
+                    0,
+                    0,
+                    self.routed_scaling_factor,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                )
+
+
+                if get_tensor_model_parallel_rank() == 0:
+                    torch.get_device_module(hidden_states.device).synchronize(
+                        hidden_states.device
+                    )
+
+                shared_output = self._forward_shared_experts(hidden_states)
+                # shared_output = hidden_states
+                if get_tensor_model_parallel_rank() == 0:
+                    # busy_wait(900)
+                    # print(time.perf_counter())
+
+                    final_hidden_states_expects_out = self.cpu_hidden_states
+                    esimd_mul_scale_factor_and_add(
+                            final_hidden_states_expects_out,  # bf16
+                            shared_output,  # fp16
+                            final_hidden_states,  # fp16
+                            final_hidden_states_expects_out.shape[0]
+                            * final_hidden_states_expects_out.shape[1],
+                            self.routed_scaling_factor,  # float
+                        )
+                if self.tp_size > 1:
+                    final_hidden_states = tensor_model_parallel_all_reduce(shared_output)
+                return final_hidden_states
         else:
             router_logits = self.gate(hidden_states)
         if global_server_args_dict["enable_ep_moe_heto"]:
@@ -2545,6 +2618,7 @@ class DeepseekV2ForCausalLM(nn.Module):
         quant_config: Optional[QuantizationConfig] = None,
         prefix: str = "",
     ) -> None:
+        # config.num_hidden_layers = 6
         super().__init__()
         self.config = config
         self.tp_size = get_tensor_model_parallel_world_size()

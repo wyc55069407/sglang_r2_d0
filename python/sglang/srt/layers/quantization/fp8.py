@@ -1163,6 +1163,7 @@ class Fp8MoEMethod:
             custom_routing_function=custom_routing_function,
             correction_bias=correction_bias,
             routed_scaling_factor=routed_scaling_factor,
+            torch_native = True,
         )
 
         if getattr(layer, "use_intel_amx_backend", False):

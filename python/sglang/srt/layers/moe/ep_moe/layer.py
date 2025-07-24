@@ -1002,6 +1002,7 @@ class EPMoESparseCPUInfer(EPMoESparseCPUInterface):
                 correction_bias=self.correction_bias,
                 custom_routing_function=self.custom_routing_function,
                 routed_scaling_factor=self.routed_scaling_factor,
+                torch_native = True,
             )
             sorted_topk_weights, sorted_topk_ids = self._sort_topk_ids(
                 topk_weights, topk_ids
@@ -1214,7 +1215,6 @@ class EPMoEHeto(EPMoESparse):
         expert_map = expert_map or self.create_default_expert_map(
             num_experts, tp_size, num_gpu_experts
         )
-
         self._init_cpu_resources(expert_map)
 
         super().__init__(
