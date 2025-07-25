@@ -207,10 +207,43 @@ class DeepseekV2MLP(nn.Module):
                 "Only silu is supported for now."
             )
         self.act_fn = SiluAndMul()
+        self.support_mega = False
+        if intermediate_size <= 8192 and enable_mega_kernel_opt:
+            self.support_mega = True
+            self.reduce_results = reduce_results
+            self.intermediate_size_local = self.down_proj.weight.shape[-1]
 
     def forward(self, x, forward_batch=None):
         if (self.tp_size == 1) and x.shape[0] == 0:
             return x
+
+        if self.support_mega and x.shape[-2] <= 8:
+            output = torch.empty_like(x)
+            tmpoutsize = self.intermediate_size_local*3
+            temp_out = torch.empty(x.shape[-2] * tmpoutsize, device=x.device, dtype=x.dtype)
+
+            esimd_kernel_uni(
+                x,
+                self.gate_up_proj.weight,
+                self.gate_up_proj.weight_scale_inv,
+                self.down_proj.weight,
+                self.down_proj.weight_scale_inv,
+                temp_out,
+                output,
+                output,
+                output,
+                output,
+                1018,
+                x.shape[-1], # HD
+                self.intermediate_size_local,
+                x.shape[-2], #seq_len
+                0, 0, 0, 0, 0, 0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            )
+
+            if self.reduce_results and self.tp_size != 1:
+                output = tensor_model_parallel_all_reduce(output)
+
+            return output
 
         gate_up, _ = self.gate_up_proj(x)
         x = self.act_fn(gate_up)
@@ -465,13 +498,13 @@ class DeepseekV2MoE(nn.Module):
                     1.0,
                 )
 
-
                 if get_tensor_model_parallel_rank() == 0:
                     torch.get_device_module(hidden_states.device).synchronize(
                         hidden_states.device
                     )
 
                 shared_output = self._forward_shared_experts(hidden_states)
+
                 # shared_output = hidden_states
                 if get_tensor_model_parallel_rank() == 0:
                     # busy_wait(900)
@@ -482,10 +515,11 @@ class DeepseekV2MoE(nn.Module):
                             final_hidden_states_expects_out,  # bf16
                             shared_output,  # fp16
                             final_hidden_states,  # fp16
-                            final_hidden_states_expects_out.shape[0]
-                            * final_hidden_states_expects_out.shape[1],
+                            shared_output.shape[0]
+                            * shared_output.shape[1],
                             self.routed_scaling_factor,  # float
                         )
+                
                 if self.tp_size > 1:
                     final_hidden_states = tensor_model_parallel_all_reduce(shared_output)
                 return final_hidden_states
@@ -777,6 +811,8 @@ class DeepseekV2MoE(nn.Module):
             state.shared_output = self.shared_experts(hidden_states_mlp_input)
         else:
             state.shared_output = None
+        if state.is_a and get_tensor_model_parallel_rank() == 0:
+                print("as ", time.perf_counter())
 
     def op_select_experts(self, state):
         router_logits = state.pop("router_logits")
@@ -872,6 +908,8 @@ class DeepseekV2MoE(nn.Module):
         final_hidden_states_expects_out = state.pop("hidden_states_after_combine")
         n_tokens = state.pop("n_tokens")
         if enable_esimd_opt and n_tokens <= 8:
+            if state.is_a and get_tensor_model_parallel_rank() == 0:
+                print("ot ", time.perf_counter())
             shared_output = state.pop("shared_output")
             final_hidden_states = torch.empty_like(shared_output)
             if final_hidden_states_expects_out is not None:
@@ -2498,6 +2536,7 @@ class DeepseekV2DecoderLayer(nn.Module):
                 "zero_allocator",
                 "tbo_subbatch_index",
                 "is_mega",
+                "is_a",
             }
         )
         return output

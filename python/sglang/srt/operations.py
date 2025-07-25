@@ -36,6 +36,7 @@ def execute_overlapped_operations(
     stages_b = _convert_operations_to_stages(operations_b)
     executor_a = _StageExecutor("a", stages_a, inputs=inputs_a)
     executor_b = _StageExecutor("b", stages_b, inputs=inputs_b)
+    executor_a.is_a = True
 
     for _ in range(delta_stage):
         executor_a.next()
@@ -72,6 +73,7 @@ class _StageExecutor:
         self._index = 0
         self._stage_state = _StateDict()
         self._stage_output = inputs
+        self.is_a = False
 
     def next(self):
         assert not self.done
@@ -81,6 +83,7 @@ class _StageExecutor:
         with _annotate_region(debug_name=f"{self._debug_name}{self._index}"):
             for op in stage:
                 with _annotate_region(debug_name=op.debug_name):
+                    self._stage_state.is_a = self.is_a
                     self._stage_output = op.fn(
                         state=self._stage_state,
                         **(
@@ -122,9 +125,9 @@ class _StateDict:
         if key == "_data":
             super().__setattr__(key, value)
             return
-        assert (
-            key not in self._data
-        ), f"`{key}` already exist, are you sure you want to override it?"
+        # assert (
+        #     key not in self._data
+        # ), f"`{key}` already exist, are you sure you want to override it?"
         self._data[key] = value
 
     def __getattr__(self, item):
