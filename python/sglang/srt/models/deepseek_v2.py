@@ -136,6 +136,7 @@ if enable_esimd_norm_rope_opt or enable_esimd_bmm_opt:
     from sgl_kernel_esimd import esimd_kernel_uni, esimd_mul_scale_factor_and_add, esimd_kernel_uni_large_params
 enable_esimd_opt = bool(int(os.getenv("ENABLE_ESIMD_TOPK_OPT", "0")))
 enable_mega_kernel_opt = bool(int(os.getenv("ENABLE_MEGA_OPT", "0")))
+enable_6_layer_dbg = bool(int(os.getenv("ENABLE_6_LAYER_DBG", "0")))
 
 logger = logging.getLogger(__name__)
 
@@ -811,8 +812,8 @@ class DeepseekV2MoE(nn.Module):
             state.shared_output = self.shared_experts(hidden_states_mlp_input)
         else:
             state.shared_output = None
-        if state.is_a and get_tensor_model_parallel_rank() == 0:
-                print("as ", time.perf_counter())
+        # if state.is_a and get_tensor_model_parallel_rank() == 0:
+        #         print("as ", time.perf_counter())
 
     def op_select_experts(self, state):
         router_logits = state.pop("router_logits")
@@ -908,8 +909,8 @@ class DeepseekV2MoE(nn.Module):
         final_hidden_states_expects_out = state.pop("hidden_states_after_combine")
         n_tokens = state.pop("n_tokens")
         if enable_esimd_opt and n_tokens <= 8:
-            if state.is_a and get_tensor_model_parallel_rank() == 0:
-                print("ot ", time.perf_counter())
+            # if state.is_a and get_tensor_model_parallel_rank() == 0:
+            #     print("ot ", time.perf_counter())
             shared_output = state.pop("shared_output")
             final_hidden_states = torch.empty_like(shared_output)
             if final_hidden_states_expects_out is not None:
@@ -2551,6 +2552,9 @@ class DeepseekV2Model(nn.Module):
         quant_config: Optional[QuantizationConfig] = None,
         prefix: str = "",
     ) -> None:
+        # YC WA
+        if enable_6_layer_dbg:
+            config.num_hidden_layers = 6
         super().__init__()
         self.padding_id = config.pad_token_id
         self.vocab_size = config.vocab_size
@@ -3201,11 +3205,13 @@ class DeepseekV2ForCausalLM(nn.Module):
                                 logger.warning(
                                     f"Unknown scale found in checkpoint: {name}"
                                 )
-                        param = params_dict[name]
-                        weight_loader = getattr(
-                            param, "weight_loader", default_weight_loader
-                        )
-                        weight_loader(param, loaded_weight)
+                        # YC WA
+                        if "indexer" not in name:
+                            param = params_dict[name]
+                            weight_loader = getattr(
+                                param, "weight_loader", default_weight_loader
+                            )
+                            weight_loader(param, loaded_weight)
 
         self.post_load_weights(is_nextn=is_nextn, weight_names=weight_names)
 
