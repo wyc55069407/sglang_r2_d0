@@ -1001,6 +1001,34 @@ class TritonAttnBackend(AttentionBackend):
         is_mla_absorb = True
         if enable_esimd_opt and is_mla_absorb:
 
+            if hasattr(forward_batch, "topk_indices") and forward_batch.topk_indices is not None:
+                start_offset = 0
+                kv_indptr_updated = kv_indptr.clone()
+                for i in range(forward_batch.batch_size):
+                    
+                    kvlen = kv_indptr[i+1] - kv_indptr[i]
+                    if kvlen > 2048:
+                        kvlen_new = 2048  # update kv_indptr
+                        
+                        start_offset += kvlen_new
+                    else:
+                        start_offset += kvlen
+
+                    kv_indptr_updated[i+1] = start_offset
+                
+                kv_indices_new = torch.zeros(start_offset, device=kv_indices.device, dtype=kv_indices.dtype)
+                for i in range(forward_batch.batch_size):
+                    kvlen = kv_indptr_updated[i+1] - kv_indptr_updated[i]
+                    if kvlen >= 2048:
+                        kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]][forward_batch.topk_indices[i]]
+                    else:
+                        kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]][forward_batch.topk_indices[i, :kvlen]]
+
+                kv_indptr = kv_indptr_updated
+                kv_indices = kv_indices_new
+                print("kv_indices updated: ", kv_indices, kv_indices.shape)
+                # breakpoint()
+
             if not self.printed_info_decode:
                 print(
                     "esimd MLA decode, shapes: q, k, v, o, kv_indptr, kv_indices",
@@ -1015,6 +1043,12 @@ class TritonAttnBackend(AttentionBackend):
                 )
                 self.printed_info_decode = True
             B = kv_indptr.shape[0] - 1
+
+            # print("decode mqa: ")
+            # print("kv_indptr ", kv_indptr.shape)
+            # print(kv_indptr)
+            # print("kv_indices ", kv_indices.shape)
+            # print(kv_indices)
 
             self._run_sdpa_forward_decode_esimd(
                 q.view(-1, layer.tp_q_head_num, layer.qk_head_dim),

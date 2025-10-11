@@ -104,6 +104,7 @@ from sglang.srt.utils import (
     is_xpu,
     log_info_on_rank0,
 )
+from sglang.srt.layers.dsa_indexer import Indexer
 
 _is_hip = is_hip()
 _is_cuda = is_cuda()
@@ -137,6 +138,7 @@ if enable_esimd_norm_rope_opt or enable_esimd_bmm_opt:
 enable_esimd_opt = bool(int(os.getenv("ENABLE_ESIMD_TOPK_OPT", "0")))
 enable_mega_kernel_opt = bool(int(os.getenv("ENABLE_MEGA_OPT", "0")))
 enable_6_layer_dbg = bool(int(os.getenv("ENABLE_6_LAYER_DBG", "0")))
+disable_dsa = bool(int(os.getenv("DISABLE_DSA", "0")))
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +150,30 @@ def busy_wait(microseconds):
         pass
 from sglang.srt.distributed import get_tensor_model_parallel_rank
 enable_dummy_cpu_moe = bool(int(os.getenv("ENABLE_DUMMY_CPU_MOE", "0")))
+
+def is_deepseek_nsa(config: PretrainedConfig) -> bool:
+    return (
+        config.architectures is not None 
+        and not disable_dsa
+        and config.architectures[0]
+        in ["DeepseekV3ForCausalLM", "DeepseekV32ForCausalLM"]
+        and getattr(config, "index_topk", None) is not None
+    )
+
+
+def get_nsa_index_head_dim(config: PretrainedConfig) -> int:
+    assert is_deepseek_nsa(config)
+    return config.index_head_dim
+
+
+def get_nsa_index_topk(config: PretrainedConfig) -> int:
+    assert is_deepseek_nsa(config)
+    return config.index_topk
+
+
+def get_nsa_index_n_heads(config: PretrainedConfig) -> int:
+    assert is_deepseek_nsa(config)
+    return config.index_n_heads
 
 
 class AttnForwardMethod(IntEnum):
@@ -986,6 +1012,10 @@ class DeepseekV2AttentionMLA(nn.Module):
         self.scaling = self.qk_head_dim**-0.5
         self.rope_theta = rope_theta
         self.max_position_embeddings = max_position_embeddings
+
+        # NOTE modification to rope_scaling must be done early enough, b/c e.g. Indexer needs it
+        if rope_scaling:
+            rope_scaling["rope_type"] = "deepseek_yarn"
         
         # For tensor parallel attention
         if self.q_lora_rank is not None:
@@ -1023,6 +1053,26 @@ class DeepseekV2AttentionMLA(nn.Module):
                 quant_config=quant_config,
                 prefix=add_prefix("kv_a_proj_with_mqa", prefix),
             )
+        
+        self.use_nsa = is_deepseek_nsa(config)
+        if self.use_nsa:
+            self.indexer = Indexer(
+                hidden_size=hidden_size,
+                index_n_heads=get_nsa_index_n_heads(config),
+                index_head_dim=get_nsa_index_head_dim(config),
+                rope_head_dim=qk_rope_head_dim,
+                index_topk=get_nsa_index_topk(config),
+                q_lora_rank=q_lora_rank,
+                max_position_embeddings=max_position_embeddings,
+                rope_theta=rope_theta,
+                scale_fmt="ue8m0",
+                block_size=128,
+                rope_scaling=rope_scaling,
+                prefix=add_prefix("indexer", prefix),
+                quant_config=quant_config,
+                layer_id=layer_id,
+                alt_stream=alt_stream,
+            )
 
         self.kv_b_proj = ColumnParallelLinear(
             self.kv_lora_rank,
@@ -1045,9 +1095,6 @@ class DeepseekV2AttentionMLA(nn.Module):
             tp_size=attn_tp_size,
         )
         self.kv_a_layernorm = RMSNorm(self.kv_lora_rank, eps=config.rms_norm_eps)
-
-        if rope_scaling:
-            rope_scaling["rope_type"] = "deepseek_yarn"
 
         self.rotary_emb = get_rope_wrapper(
             qk_rope_head_dim,
@@ -1327,6 +1374,12 @@ class DeepseekV2AttentionMLA(nn.Module):
                 [self.q_lora_rank, self.kv_lora_rank + self.qk_rope_head_dim], dim=-1
             )
             q = self.q_a_layernorm(q)
+            
+            # q_lora needed by indexer
+            q_lora = None
+            if self.use_nsa:
+                q_lora = q
+
             q = self.q_b_proj(q)[0].view(-1, self.num_local_heads, self.qk_head_dim)
         else:
             q = self.q_proj(hidden_states)[0].view(
@@ -1356,6 +1409,23 @@ class DeepseekV2AttentionMLA(nn.Module):
         forward_batch.token_to_kv_pool.set_kv_buffer(
             self.attn_mha, forward_batch.out_cache_loc, latent_cache, None
         )
+
+        topk_indices = None
+        if q_lora is not None:
+            if not hasattr(forward_batch, "topk_indices"):
+                forward_batch.topk_indices = None
+            topk_indices = self.indexer(
+                x=hidden_states,
+                q_lora=q_lora,
+                positions=positions,
+                forward_batch=forward_batch,
+                layer_id=self.layer_id,
+            )
+            # print(topk_indices)
+            # print(topk_indices.shape)
+            # memGB = torch.xpu.memory_allocated(device=hidden_states.device) / 1024 / 1024 / 1024
+            # print("mem allocated: ", memGB, "GB")
+            forward_batch.topk_indices = topk_indices
 
         return q, k, v, forward_batch
 
@@ -1756,6 +1826,11 @@ class DeepseekV2AttentionMLA(nn.Module):
                     q = self.q_a_layernorm(q)
                     k_nope = self.kv_a_layernorm(k_nope)
 
+            # q_lora needed by indexer
+            q_lora = None
+            if self.use_nsa:
+                q_lora = q
+
             k_nope = k_nope.unsqueeze(1)
             q = self.q_b_proj(q)[0].view(-1, self.num_local_heads, self.qk_head_dim)
         else:
@@ -1813,6 +1888,23 @@ class DeepseekV2AttentionMLA(nn.Module):
 
         q_nope_out = q_nope_out.transpose(0, 1)
         q_pe, k_pe = self.rotary_emb(positions, q_pe, k_pe)
+
+        topk_indices = None
+        if q_lora is not None:
+            if not hasattr(forward_batch, "topk_indices"):
+                forward_batch.topk_indices = None
+            topk_indices = self.indexer(
+                x=hidden_states,
+                q_lora=q_lora,
+                positions=positions,
+                forward_batch=forward_batch,
+                layer_id=self.layer_id,
+            )
+            # print(topk_indices)
+            # print(topk_indices.shape)
+            # memGB = torch.xpu.memory_allocated(device=hidden_states.device) / 1024 / 1024 / 1024
+            # print("mem allocated: ", memGB, "GB")
+            forward_batch.topk_indices = topk_indices
 
         return q_pe, k_pe, q_nope_out, k_nope, forward_batch, zero_allocator
 
@@ -3206,7 +3298,7 @@ class DeepseekV2ForCausalLM(nn.Module):
                                     f"Unknown scale found in checkpoint: {name}"
                                 )
                         # YC WA
-                        if "indexer" not in name:
+                        if not disable_dsa or "indexer" not in name:
                             param = params_dict[name]
                             weight_loader = getattr(
                                 param, "weight_loader", default_weight_loader
