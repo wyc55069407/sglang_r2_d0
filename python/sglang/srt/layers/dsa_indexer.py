@@ -370,6 +370,10 @@ class Indexer(CustomOp):
 
             q_len_start = q_len_end
 
+        if forward_batch.forward_mode.is_extend():
+            # do not cal indexer for prefill
+            return None
+
         weights = self._get_logits_head_gate(x)
 
         topk_result = self.forward_indexer(

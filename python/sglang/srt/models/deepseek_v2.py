@@ -1732,6 +1732,12 @@ class DeepseekV2AttentionMLA(nn.Module):
             0, 0,0,0,0,
             input_layernorm.variance_epsilon, self.q_a_layernorm.variance_epsilon, self.kv_a_layernorm.variance_epsilon, self.w_scale_item, 1.0, )
 
+
+        # if not hasattr(self, "index_score"):
+        #     self.index_score = torch.rand(1, 32768, device="xpu", dtype=torch.float16)
+
+        # self.index_score.topk(2048, dim=-1)
+
         #set_kv_buffer + sdpa  -> submit in triton_backend.py
         if forward_batch.forward_mode.is_decode():
             if is_tbo:
