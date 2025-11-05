@@ -1737,6 +1737,36 @@ class DeepseekV2AttentionMLA(nn.Module):
         #     self.index_score = torch.rand(1, 32768, device="xpu", dtype=torch.float16)
 
         # self.index_score.topk(2048, dim=-1)
+        # q_lora needed by indexer
+        q_lora = None
+        if self.use_nsa:
+            seq_len = hidden_states.shape[-2]
+            lora_a_dim = self.fused_qkv_a_proj_with_mqa.weight.shape[-2]
+            start_offset = seq_len * self.hidden_size + seq_len * lora_a_dim
+            end_offset = start_offset + seq_len * self.q_lora_rank
+            q_lora = results.flatten()[start_offset:end_offset].view(seq_len, -1)
+
+            # normed hidden_states:
+            start_offset = 0
+            end_offset = start_offset + seq_len * self.hidden_size
+            hidden_states = results.flatten()[start_offset:end_offset].view(seq_len, -1)
+
+        topk_indices = None
+        if q_lora is not None:
+            if not hasattr(forward_batch, "topk_indices"):
+                forward_batch.topk_indices = None
+            topk_indices = self.indexer(
+                x=hidden_states,
+                q_lora=q_lora,
+                positions=positions,
+                forward_batch=forward_batch,
+                layer_id=self.layer_id,
+            )
+            # print(topk_indices)
+            # print(topk_indices.shape)
+            # memGB = torch.xpu.memory_allocated(device=hidden_states.device) / 1024 / 1024 / 1024
+            # print("mem allocated: ", memGB, "GB")
+            forward_batch.topk_indices = topk_indices
 
         #set_kv_buffer + sdpa  -> submit in triton_backend.py
         if forward_batch.forward_mode.is_decode():

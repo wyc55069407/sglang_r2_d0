@@ -1285,6 +1285,269 @@ inline void esimd_shared_expert_mega(
     seq_len, hidden_dim, inter_dim, 1, 128, 128, 0, dpcpp_queue);
 }
 
+inline bool atomic_read_check(uint8_t* index_buf, int32_t target_val)
+{
+    __ESIMD_NS::simd<int32_t, 1> inputdata{0};
+
+    // 1. Define the value to add as a SIMD vector of size 1.
+    __ESIMD_NS::simd<int32_t, 1> value_to_add = 0;
+
+    // 2. Define a mask. Since we want the operation to happen, the mask is 1.
+    __ESIMD_NS::simd_mask<1> mask = 1;
+
+    int32_t* status_offset = (int32_t*)index_buf;
+
+    // 3. Call the ESIMD atomic intrinsic.
+    // The return value (old_val) holds the value before the addition.
+    __ESIMD_NS::simd<int32_t, 1> inputdata_write = __ESIMD_NS::atomic_update<__ESIMD_NS::atomic_op::add>(
+        status_offset,   // The USM pointer
+        inputdata * sizeof(int32_t),  // offset
+        value_to_add,  // The value to add
+        mask           // The execution mask
+    );
+
+    return inputdata_write[0] >= target_val;
+}
+
+inline int32_t atomic_read(uint8_t* index_buf)
+{
+    __ESIMD_NS::simd<int32_t, 1> inputdata{0};
+
+    // 1. Define the value to add as a SIMD vector of size 1.
+    __ESIMD_NS::simd<int32_t, 1> value_to_add = 0;
+
+    // 2. Define a mask. Since we want the operation to happen, the mask is 1.
+    __ESIMD_NS::simd_mask<1> mask = 1;
+
+    int32_t* status_offset = (int32_t*)index_buf;
+
+    // 3. Call the ESIMD atomic intrinsic.
+    // The return value (old_val) holds the value before the addition.
+    __ESIMD_NS::simd<int32_t, 1> inputdata_write = __ESIMD_NS::atomic_update<__ESIMD_NS::atomic_op::add>(
+        status_offset,   // The USM pointer
+        inputdata * sizeof(int32_t),  // offset
+        value_to_add,  // The value to add
+        mask           // The execution mask
+    );
+
+    return inputdata_write[0];
+}
+
+inline void atomic_update_plus1(uint8_t* index_buf)
+{
+    __ESIMD_NS::simd<int32_t, 1> inputdata{0};
+
+    // 1. Define the value to add as a SIMD vector of size 1.
+    __ESIMD_NS::simd<int32_t, 1> value_to_add = 1;
+
+    // 2. Define a mask. Since we want the operation to happen, the mask is 1.
+    __ESIMD_NS::simd_mask<1> mask = 1;
+
+    int32_t* status_offset = (int32_t*)index_buf;
+
+    // 3. Call the ESIMD atomic intrinsic.
+    // The return value (old_val) holds the value before the addition.
+    __ESIMD_NS::simd<int32_t, 1> inputdata_write = __ESIMD_NS::atomic_update<__ESIMD_NS::atomic_op::add>(
+        status_offset,   // The USM pointer
+        inputdata * sizeof(int32_t),  // offset
+        value_to_add,  // The value to add
+        mask           // The execution mask
+    );
+}
+
+
+inline void esimd_topk_old(
+    uint8_t* input,
+    uint8_t* index_buf,
+    uint8_t* out_ordered,
+    uint8_t* out_idx,
+    int64_t total_count,
+    int64_t topk,
+    sycl::queue& dpcpp_queue) {
+
+  int n_threads = 1;
+
+  // batch 1   each grp: value ++
+  // batch 2   each grp: value ++  all grp do same: value *= 2
+  // batch 3   each grp: value ++  all grp do same: value -= 500
+  // input is  1 x int32_t
+
+  int64_t count_per_batch = total_count;
+
+  sycl::range<1> GlobalRange(count_per_batch * 3);
+  sycl::range<1> LocalRange(n_threads);
+  sycl::nd_range<1> Range(GlobalRange, LocalRange);
+
+  dpcpp_queue.submit([&](handler& cgh) {
+    cgh.parallel_for(
+      Range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
+
+        int gidx = ndi.get_group(0);
+        int batch_idx = gidx / count_per_batch;
+        
+        if (batch_idx == 0)
+        {
+          atomic_update_plus1(index_buf);
+        }
+        else if (batch_idx == 1)
+        {
+          int32_t target_val = count_per_batch;
+          while (true)
+          {
+            if (atomic_read_check(index_buf, target_val))
+            {
+              break;
+            }
+          }
+
+          int32_t value = atomic_read(index_buf);
+
+          value = value * 2;
+
+          simd<int32_t, 1> value_out;
+          value_out[0] = value;
+
+          block_store<int32_t, 1>((int32_t*)out_ordered + gidx % count_per_batch, value_out);
+
+          atomic_update_plus1(index_buf);
+        }
+        else if (batch_idx == 2)
+        {
+          int32_t target_val = count_per_batch * 2;
+          while (true)
+          {
+            if (atomic_read_check(index_buf, target_val))
+            {
+              break;
+            }
+          }
+
+          int32_t value = atomic_read(index_buf);
+
+          value = value - 500;
+
+          simd<int32_t, 1> value_out;
+          value_out[0] = value;
+
+          block_store<int32_t, 1>((int32_t*)out_idx + gidx % count_per_batch, value_out);
+
+          atomic_update_plus1(index_buf);
+        }
+        
+      });
+  });
+
+
+}
+
+#define COUNT_PER_WG   32
+#define INDEXING_PER_WG   128
+inline void esimd_topk(
+    uint8_t* input,
+    uint8_t* input_index,
+    uint8_t* barrel_buf,
+    uint8_t* step_sync_buf,
+    uint8_t* out_ordered,
+    uint8_t* out_idx,
+    int64_t total_count,
+    int64_t topk,
+    sycl::queue& dpcpp_queue) {
+
+  int n_threads = 1;
+
+  // assume total_count is 32 aligned
+  int64_t wg_count_substep = total_count / COUNT_PER_WG;
+  int64_t wg_indexing_substep = (wg_count_substep + INDEXING_PER_WG - 1) / INDEXING_PER_WG;
+
+  int64_t step_count = 4;  // each step has 4 substep radix index, cumsum, cumsum_2, scan
+  int64_t wg_count_per_step = wg_count_substep + wg_indexing_substep + wg_indexing_substep + wg_count_substep;
+
+  // barrel_buf size is (step_count, wg_count_substep, 16)   more right more new data.  16 is barrel num
+
+  int32_t step_checkval[4*3] = {};
+  int32_t acc_oldsteps = 0;
+  for (int s=0; s<4; s++)
+  {
+    for (int sb=0; sb<4; sb++)
+    {
+      step_checkval[s * 4 + sb] = acc_oldsteps;
+      acc_oldsteps += (sb == 1 || sb == 2) ? wg_indexing_substep : wg_count_substep;
+    }
+  }
+
+  sycl::range<1> GlobalRange(wg_count_per_step * step_count);
+  sycl::range<1> LocalRange(n_threads);
+  sycl::nd_range<1> Range(GlobalRange, LocalRange);
+
+  dpcpp_queue.submit([&](handler& cgh) {
+    cgh.parallel_for(
+      Range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
+
+        int gidx = ndi.get_group(0);
+        int step_idx = gidx / wg_count_per_step;
+        int in_step_wg_idx = gidx % wg_count_per_step;
+        int sub_step_idx = 0;
+        if (in_step_wg_idx >= wg_count_substep && in_step_wg_idx < wg_count_substep + wg_indexing_substep)
+        {
+          sub_step_idx = 1;
+        }
+        if (in_step_wg_idx >= wg_count_substep + wg_indexing_substep && in_step_wg_idx < wg_count_substep + wg_indexing_substep * 2)
+        {
+          sub_step_idx = 2;
+        }
+        if (in_step_wg_idx >= wg_count_substep + wg_indexing_substep * 2)
+        {
+          sub_step_idx = 3;
+        }
+
+        // sync steps
+        int32_t target_val = step_checkval[step_idx * 4 + sub_step_idx];
+        while (true)
+        {
+          if (atomic_read_check(step_sync_buf, target_val))
+          {
+            break;
+          }
+        }
+
+        // select field due to steps
+        // 0x  (step_idx * 8)
+
+        if (sub_step_idx == 0) // radix index substep
+        {
+          int in_substep_wg_idx = in_step_wg_idx;
+          
+          simd<fp16, COUNT_PER_WG> input_cur = block_load<fp16, COUNT_PER_WG>((fp16*)input + COUNT_PER_WG * in_substep_wg_idx);
+
+
+
+        }
+        else if (sub_step_idx == 1) // radix cumsum substep
+        {
+          int in_substep_wg_idx = in_step_wg_idx - wg_count_substep;
+
+        }
+        else if (sub_step_idx == 2) // radix cumsum_2 substep
+        {
+          int in_substep_wg_idx = in_step_wg_idx - wg_count_substep - wg_indexing_substep;
+
+        }
+        else if (sub_step_idx == 3) // radix scan substep
+        {
+          int in_substep_wg_idx = in_step_wg_idx - wg_count_substep - wg_indexing_substep * 2;
+
+        }
+
+        esimd::fence(esimd::global_mem_fence);
+        // steps increase
+        atomic_update_plus1(step_sync_buf);
+      });
+  });
+
+
+}
+
+
 at::Tensor esimd_kernel_uni(
     at::Tensor _p0,
     at::Tensor _p1,
@@ -1373,6 +1636,9 @@ at::Tensor esimd_kernel_uni(
         break;
         case 1112:
           esimd_updateKV_indexed(p0, p1, p2, i1, i2, i3, dpcpp_queue);
+        break;
+        case 3322:
+          esimd_topk_old(p0, p1, p2, p3, i1, i2, dpcpp_queue);
         break;
         default:
           printf("---------- esimd kernel op not supported, op is %lld ----------\n", i0);
