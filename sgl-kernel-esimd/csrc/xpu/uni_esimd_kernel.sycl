@@ -17,6 +17,7 @@
 #include "esimd_kernels/rotary_pos_emb.h"
 #include "esimd_kernels/fp16_GEMV.h"
 #include "esimd_kernels/cat.h"
+#include "esimd_kernels/topk.h"
 
 void esimd_add(uint8_t* a, uint8_t* b, uint8_t* c, int64_t len, float factor, sycl::queue& q){
     sycl::range<1> LocalRange(1);
@@ -1333,7 +1334,7 @@ inline int32_t atomic_read(uint8_t* index_buf)
     return inputdata_write[0];
 }
 
-inline void atomic_update_plus1(uint8_t* index_buf)
+inline int32_t atomic_update_plus1(uint8_t* index_buf)
 {
     __ESIMD_NS::simd<int32_t, 1> inputdata{0};
 
@@ -1353,6 +1354,8 @@ inline void atomic_update_plus1(uint8_t* index_buf)
         value_to_add,  // The value to add
         mask           // The execution mask
     );
+
+    return inputdata_write[0];
 }
 
 
@@ -1440,13 +1443,18 @@ inline void esimd_topk_old(
 
 }
 
-#define COUNT_PER_WG   32
+#define COUNT_PER_WG   256
 #define INDEXING_PER_WG   128
+#define STT  fp16
+#define BARREL_CNT  16
 inline void esimd_topk(
     uint8_t* input,
-    uint8_t* input_index,
+    uint8_t* input_idx,
     uint8_t* barrel_buf,
+    uint8_t* barrel_radix_buf,
+    uint8_t* barrel_reduce_buf,
     uint8_t* step_sync_buf,
+    uint8_t* gidx_sync_buf,
     uint8_t* out_ordered,
     uint8_t* out_idx,
     int64_t total_count,
@@ -1455,27 +1463,30 @@ inline void esimd_topk(
 
   int n_threads = 1;
 
-  // assume total_count is 32 aligned
+  // assume total_count is COUNT_PER_WG aligned
   int64_t wg_count_substep = total_count / COUNT_PER_WG;
   int64_t wg_indexing_substep = (wg_count_substep + INDEXING_PER_WG - 1) / INDEXING_PER_WG;
 
   int64_t step_count = 4;  // each step has 4 substep radix index, cumsum, cumsum_2, scan
-  int64_t wg_count_per_step = wg_count_substep + wg_indexing_substep + wg_indexing_substep + wg_count_substep;
+  // int64_t wg_count_per_step = wg_count_substep + wg_indexing_substep + wg_indexing_substep + wg_count_substep;
 
-  // barrel_buf size is (step_count, wg_count_substep, 16)   more right more new data.  16 is barrel num
+  // barrel_buf and barrel_radix_buf size is (step_count, wg_count_substep, BARREL_CNT) 
+  // more right more new data.  BARREL_CNT is barrel num, 0,1,2,...,15
+  // barrel_reduce_buf size is (step_count, wg_indexing_substep, BARREL_CNT) 
+  
+  // input and input_idx size is (1, total_count)  fp16, uint32_t
+  // out_ordered and out_idx size is (step_count, total_count)   fp16, uint32_t
+  // step_sync_buf shape is (1)   dtype int32_t
 
-  int32_t step_checkval[4*3] = {};
   int32_t acc_oldsteps = 0;
-  for (int s=0; s<4; s++)
-  {
-    for (int sb=0; sb<4; sb++)
-    {
-      step_checkval[s * 4 + sb] = acc_oldsteps;
-      acc_oldsteps += (sb == 1 || sb == 2) ? wg_indexing_substep : wg_count_substep;
-    }
-  }
 
-  sycl::range<1> GlobalRange(wg_count_per_step * step_count);
+  // printf("step 1 debug!\n");
+  for (int step_idx = 0; step_idx < step_count; step_idx++)
+  {
+  for (int sub_step_idx = 0; sub_step_idx < 4; sub_step_idx++)
+  {
+  int64_t wg_count_per_step = (sub_step_idx == 1 || sub_step_idx == 2) ? wg_indexing_substep : wg_count_substep;
+  sycl::range<1> GlobalRange(wg_count_per_step);
   sycl::range<1> LocalRange(n_threads);
   sycl::nd_range<1> Range(GlobalRange, LocalRange);
 
@@ -1483,68 +1494,186 @@ inline void esimd_topk(
     cgh.parallel_for(
       Range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
 
-        int gidx = ndi.get_group(0);
-        int step_idx = gidx / wg_count_per_step;
-        int in_step_wg_idx = gidx % wg_count_per_step;
-        int sub_step_idx = 0;
-        if (in_step_wg_idx >= wg_count_substep && in_step_wg_idx < wg_count_substep + wg_indexing_substep)
-        {
-          sub_step_idx = 1;
-        }
-        if (in_step_wg_idx >= wg_count_substep + wg_indexing_substep && in_step_wg_idx < wg_count_substep + wg_indexing_substep * 2)
-        {
-          sub_step_idx = 2;
-        }
-        if (in_step_wg_idx >= wg_count_substep + wg_indexing_substep * 2)
-        {
-          sub_step_idx = 3;
-        }
-
-        // sync steps
-        int32_t target_val = step_checkval[step_idx * 4 + sub_step_idx];
-        while (true)
-        {
-          if (atomic_read_check(step_sync_buf, target_val))
-          {
-            break;
-          }
-        }
+        int in_substep_wg_idx = ndi.get_group(0);
 
         // select field due to steps
+        
         // 0x  (step_idx * 8)
+#if BARREL_CNT == 16
+        uint16_t field = (0xf << (step_idx*4));
+#elif BARREL_CNT == 256
+        uint16_t field = (0xff << (step_idx*8));
+#endif
+
+        uint8_t* input_read = input;
+        uint8_t* input_idx_read = input_idx;
+        uint8_t* out_ordered_write = out_ordered + step_idx * total_count * sizeof(STT);
+        uint8_t* out_idx_write = out_idx + step_idx * total_count * sizeof(uint32_t);
+        if (step_idx > 0)
+        {
+          input_read = out_ordered + (step_idx - 1) * total_count * sizeof(STT);
+          input_idx_read = out_idx + (step_idx - 1) * total_count * sizeof(uint32_t);
+        }
 
         if (sub_step_idx == 0) // radix index substep
         {
-          int in_substep_wg_idx = in_step_wg_idx;
-          
-          simd<fp16, COUNT_PER_WG> input_cur = block_load<fp16, COUNT_PER_WG>((fp16*)input + COUNT_PER_WG * in_substep_wg_idx);
+          simd<STT, COUNT_PER_WG> input_cur = block_load<STT, COUNT_PER_WG>((STT*)input_read + COUNT_PER_WG * in_substep_wg_idx);
 
+          simd<uint16_t, COUNT_PER_WG> input_barrel_indexing;
+          input_barrel_indexing = input_cur.template bit_cast_view<uint16_t>().template select<COUNT_PER_WG, 1>(0) & field;
+#if BARREL_CNT == 16
+        input_barrel_indexing = (input_barrel_indexing >> (step_idx*4));
+#elif BARREL_CNT == 256
+        input_barrel_indexing = (input_barrel_indexing >> (step_idx*8));
+#endif
+          simd<uint16_t, BARREL_CNT> local_barrel{0};
 
+          #pragma unroll
+          for (int k = 0; k < COUNT_PER_WG; k++)
+          {
+            local_barrel[input_barrel_indexing[k]] = local_barrel[input_barrel_indexing[k]] + 1;
+          }
 
+          block_store<uint32_t, BARREL_CNT>((uint32_t*)barrel_buf + step_idx * wg_count_substep * BARREL_CNT + in_substep_wg_idx * BARREL_CNT, local_barrel);
         }
         else if (sub_step_idx == 1) // radix cumsum substep
         {
-          int in_substep_wg_idx = in_step_wg_idx - wg_count_substep;
+          simd<uint32_t, BARREL_CNT> local_barrel_sum{0};
+          #pragma unroll
+          for (int k = 0; k < INDEXING_PER_WG ; k++)
+          {
+            simd<uint32_t, BARREL_CNT> local_barrel = block_load<uint32_t, BARREL_CNT>((uint32_t*)barrel_buf + step_idx * wg_count_substep * BARREL_CNT +
+              in_substep_wg_idx * INDEXING_PER_WG * BARREL_CNT + k * BARREL_CNT);
+            simd<uint32_t, BARREL_CNT> local_barrel_cumsumed = local_barrel + local_barrel_sum;
+            local_barrel_sum = local_barrel_sum + local_barrel;
 
+            block_store<uint32_t, BARREL_CNT>((uint32_t*)barrel_radix_buf + step_idx * wg_count_substep * BARREL_CNT +
+              in_substep_wg_idx * INDEXING_PER_WG * BARREL_CNT + k * BARREL_CNT, local_barrel_cumsumed);
+          }
+
+          block_store<uint32_t, BARREL_CNT>((uint32_t*)barrel_reduce_buf + step_idx * wg_indexing_substep * BARREL_CNT +
+              in_substep_wg_idx * BARREL_CNT, local_barrel_sum);
         }
         else if (sub_step_idx == 2) // radix cumsum_2 substep
         {
-          int in_substep_wg_idx = in_step_wg_idx - wg_count_substep - wg_indexing_substep;
+          simd<uint32_t, BARREL_CNT> total_barrel_sum{0};
+          for (int rr = 0; rr < wg_indexing_substep ; rr++)
+          {
+            simd<uint32_t, BARREL_CNT> barrel_reduce_cur = block_load<uint32_t, BARREL_CNT>((uint32_t*)barrel_reduce_buf +
+              step_idx * wg_indexing_substep * BARREL_CNT + rr * BARREL_CNT);
+            total_barrel_sum = total_barrel_sum + barrel_reduce_cur;
+          }
+          #pragma unroll
+          for (int k = 1; k < BARREL_CNT ; k++)
+          {
+            total_barrel_sum[k] = total_barrel_sum[k] + total_barrel_sum[k-1];
+          }
+          simd<uint32_t, BARREL_CNT> total_barrel_base_radix{0};
+          total_barrel_base_radix.template select<15, 1>(1) = total_barrel_sum.template select<15, 1>(0);
 
+          for (int rr = 0; rr < in_substep_wg_idx; rr++)  // sum count-1 or index
+          {
+            simd<uint32_t, BARREL_CNT> barrel_reduce_cur = block_load<uint32_t, BARREL_CNT>((uint32_t*)barrel_reduce_buf +
+              step_idx * wg_indexing_substep * BARREL_CNT + rr * BARREL_CNT);
+            total_barrel_base_radix = total_barrel_base_radix + barrel_reduce_cur;
+          }
+
+          simd<uint32_t, BARREL_CNT> local_barrel_cumsumd{0};
+          #pragma unroll
+          for (int k = 0; k < INDEXING_PER_WG ; k++)
+          {
+            simd<uint32_t, BARREL_CNT> local_barrel = block_load<uint32_t, BARREL_CNT>((uint32_t*)barrel_buf + step_idx * wg_count_substep * BARREL_CNT +
+              in_substep_wg_idx * INDEXING_PER_WG * BARREL_CNT + k * BARREL_CNT);
+            simd<uint32_t, BARREL_CNT> local_barrel_radixed = local_barrel + total_barrel_base_radix + local_barrel_cumsumd;
+            local_barrel_cumsumd = local_barrel_cumsumd + local_barrel;
+
+            block_store<uint32_t, BARREL_CNT>((uint32_t*)barrel_radix_buf + step_idx * wg_count_substep * BARREL_CNT +
+              in_substep_wg_idx * INDEXING_PER_WG * BARREL_CNT + k * BARREL_CNT, local_barrel_radixed);
+          }
         }
         else if (sub_step_idx == 3) // radix scan substep
         {
-          int in_substep_wg_idx = in_step_wg_idx - wg_count_substep - wg_indexing_substep * 2;
+          simd<STT, COUNT_PER_WG> input_cur = block_load<STT, COUNT_PER_WG>((STT*)input_read + COUNT_PER_WG * in_substep_wg_idx);
+          simd<uint32_t, COUNT_PER_WG> input_idx_cur = block_load<uint32_t, COUNT_PER_WG>((uint32_t*)input_idx_read + COUNT_PER_WG * in_substep_wg_idx);
+          simd<uint32_t, BARREL_CNT> local_barrel = block_load<uint32_t, BARREL_CNT>((uint32_t*)barrel_radix_buf + step_idx * wg_count_substep * BARREL_CNT + in_substep_wg_idx * BARREL_CNT);
 
+          simd<uint16_t, COUNT_PER_WG> input_barrel_indexing;
+          input_barrel_indexing = input_cur.template bit_cast_view<uint16_t>().template select<COUNT_PER_WG, 1>(0) & field;
+#if BARREL_CNT == 16
+        input_barrel_indexing = (input_barrel_indexing >> (step_idx*4));
+#elif BARREL_CNT == 256
+        input_barrel_indexing = (input_barrel_indexing >> (step_idx*8));
+#endif
+
+          #pragma unroll
+          for (int k = COUNT_PER_WG-1; k >= 0 ; k--)
+          {
+            STT out_ordered_cur = input_cur[k];
+            uint32_t out_idx_cur = input_idx_cur[k];
+            
+            uint32_t new_offset = local_barrel[input_barrel_indexing[k]];
+            
+            local_barrel[input_barrel_indexing[k]] = new_offset - 1;
+
+            block_store<STT, 1>((STT*)out_ordered_write + new_offset - 1, out_ordered_cur);
+            block_store<uint32_t, 1>((uint32_t*)out_idx_write + new_offset - 1, out_idx_cur);
+
+          }
         }
 
-        esimd::fence(esimd::global_mem_fence);
-        // steps increase
-        atomic_update_plus1(step_sync_buf);
       });
   });
 
+  }
+  }
 
+}
+
+
+inline void esimd_topk_fused(
+    uint8_t* input,
+    uint8_t* input_idx,
+    uint8_t* debug_buf,
+    uint8_t* debug_buf1,
+    uint8_t* debug_buf2,
+    uint8_t* out_ordered,
+    uint8_t* out_idx,
+    int64_t total_count,
+    uint32_t RCOUNT,
+    int64_t topk,
+    sycl::queue& dpcpp_queue) {
+
+    // assume topk is always 2048
+    if (topk != 2048)
+    {
+      printf("topk only supports 2048!!\n");
+      return;
+    }
+
+    // assmue RCOUNT*total_count = RCOUNT * TD * 64, if TD=128, RCOUNT*total_count = RCOUNT*8192
+    switch(total_count)
+    {
+    case 4096:
+      esimd_topk_local<64>(input, input_idx, /*debug_buf, debug_buf1, debug_buf2,*/ out_ordered, out_idx, RCOUNT, dpcpp_queue);
+    break;
+    case 8192:
+      esimd_topk_local<128>(input, input_idx, /*debug_buf, debug_buf1, debug_buf2,*/ out_ordered, out_idx, RCOUNT, dpcpp_queue);
+    break;
+    case 12288:
+      esimd_topk_local<192>(input, input_idx, /*debug_buf, debug_buf1, debug_buf2,*/ out_ordered, out_idx, RCOUNT, dpcpp_queue);
+    break;
+    case 16384:
+      esimd_topk_local<256>(input, input_idx, /*debug_buf, debug_buf1, debug_buf2,*/ out_ordered, out_idx, RCOUNT, dpcpp_queue);
+    break;
+    case 20480:
+      esimd_topk_local<320>(input, input_idx, /*debug_buf, debug_buf1, debug_buf2,*/ out_ordered, out_idx, RCOUNT, dpcpp_queue);
+    break;
+    default:
+      printf("---------- total_count not supported %d----------\n", (int)total_count);
+    break;
+    }
+    
+    
 }
 
 
@@ -1638,7 +1767,10 @@ at::Tensor esimd_kernel_uni(
           esimd_updateKV_indexed(p0, p1, p2, i1, i2, i3, dpcpp_queue);
         break;
         case 3322:
-          esimd_topk_old(p0, p1, p2, p3, i1, i2, dpcpp_queue);
+          esimd_topk(p0, p1, p2, p3, p4, p5, p6, p7, p8, i1, i2, dpcpp_queue);
+        break;
+        case 3311:
+          esimd_topk_fused(p0, p1, p2, p3, p4, p5, p6, i1, i2, i3, dpcpp_queue);
         break;
         default:
           printf("---------- esimd kernel op not supported, op is %lld ----------\n", i0);
