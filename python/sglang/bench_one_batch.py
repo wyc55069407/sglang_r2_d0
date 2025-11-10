@@ -1150,6 +1150,1876 @@ uncle never spoke about them, and of course he was forbidden to ask
 questions. There were no photographs of them in the house.
 
 When he had been younger, Harry had dreamed and dreamed of some unknown
+relation coming take him away, but it had never happened; the
+Dursleys were his only family. Yet sometimes he thought (or maybe hoped)
+that strangers in the street seemed to know him. Very strange strangers
+they were, too. A tiny man in a violet top hat had bowed to him once
+while out shopping with Aunt Petunia and Dudley. After asking Harry
+furiously if he knew the man, Aunt Petunia had rushed them out of the
+shop without buying anything. A wild-looking old woman dressed all in
+green had waved merrily at him once on a bus. A bald man in a very long
+purple coat had actually shaken his hand in the street the other day and
+then walked away without a word. The weirdest thing about all these
+people was the way they seemed to vanish the second Harry tried to get a
+closer look.
+
+At school, Harry had no one. Everybody knew that Dudley\'s gang hated
+that odd Harry Potter in his baggy old clothes and broken glasses, and
+nobody liked to disagree with Dudley\'s gang.
+
+
+CHAPTER THREE
+
+THE LETTERS FROM NO ONE
+
+The escape of the Brazilian boa constrictor earned Harry his
+longest-ever punishment. By the time he was allowed out of his cupboard
+again, the summer holidays had started and Dudley had already broken his
+new video camera, crashed his remote control airplane, and, first time
+out on his racing bike, knocked down old Mrs. Figg as she crossed Privet
+Drive on her crutches.
+
+Harry was glad school was over, but there was no escaping Dudley\'s gang,
+who visited the house every single day. Piers, Dennis, Malcolm, and
+Gordon were all big and stupid, but as Dudley was the biggest and
+stupidest of the lot, he was the leader. The rest of them were all quite
+happy to join in Dudley\'s favorite sport: Harry Hunting.
+
+This was why Harry spent as much time as possible out of the house,
+wandering around and thinking about the end of the holidays, where he
+could see a tiny ray of hope. When September came he would be going off
+to secondary school and, for the first time in his life, he wouldn\'t be
+with Dudley. Dudley had been accepted at Uncle Vernon\'s old private
+school, Smeltings. Piers Polkiss was going there too. Harry, on the
+other hand, was going to Stonewall High, the local public school. Dudley
+thought this was very funny.
+
+"They stuff people\'s heads down the toilet the first day at Stonewall,"
+he told Harry. "Want to come upstairs and practice?"
+
+"No, thanks," said Harry. "The poor toilet\'s never had anything as
+horrible as your head down it -- it might be sick." Then he ran, before
+Dudley could work out what he\'d said.
+
+One day in July, Aunt Petunia took Dudley to London to buy his Smeltings
+uniform, leaving Harry at Mrs. Figg\'s. Mrs. Figg wasn \'t as bad as
+usual. It turned out she\'d broken her leg tripping over one of her cats,
+and she didn\'t seem quite as fond of them as before. She let Harry watch
+television and gave him a bit of chocolate cake that tasted as though
+she\'d had it for several years.
+
+That evening, Dudley paraded around the living room for the family in
+his brand-new uniform. Smeltings\' boys wore maroon tailcoats, orange
+knickerbockers, and flat straw hats called boaters. They also carried
+knobbly sticks, used for hitting each other while the teachers weren\'t
+looking. This was supposed to be good training for later life.
+
+As he looked at Dudley in his new knickerbockers, Uncle Vernon said
+gruffly that it was the proudest moment of his life. Aunt Petunia burst
+into tears and said she couldn\'t believe it was her Ickle Dudleykins, he
+looked so handsome and grown-up. Harry didn\'t trust himself to speak. He
+thought two of his ribs might already have cracked from trying not to
+laugh.
+
+There was a horrible smell in the kitchen the next morning when Harry
+went in for breakfast. It seemed to be coming from a large metal tub in
+the sink. He went to have a look. The tub was full of what looked like
+dirty rags swimming in gray water.
+
+"What\'s this?" he asked Aunt Petunia. Her lips tightened as they always
+did if he dared to ask a question.
+
+"Your new school uniform," she said.
+
+Harry looked in the bowl again.
+
+"Oh," he said, "I didn\'t realize it had to be so wet."
+
+"DotA be stupid," snapped Aunt Petunia. "I\'m dyeing some of Dudley\'s old
+things gray for you. It\'ll look just like everyone else\'s when I\'ve
+finished."
+
+Harry seriously doubted this, but thought it best not to argue. He sat
+down at the table and tried not to think about how he was going to look
+on his first day at Stonewall High -- like he was wearing bits of old
+elephant skin, probably.
+
+Dudley and Uncle Vernon came in, both with wrinkled noses because of the
+smell from Harry\'s new uniform. Uncle Vernon opened his newspaper as
+usual and Dudley banged his Smelting stick, which he carried everywhere,
+on the table.
+
+They heard the click of the mail slot and flop of letters on the
+doormat.
+
+"Get the mail, Dudley," said Uncle Vernon from behind his paper.
+
+"Make Harry get it."
+
+"Get the mail, Harry."
+
+"Make Dudley get it."
+
+"Poke him with your Smelting stick, Dudley."
+
+Harry dodged the Smelting stick and went to get the mail. Three things
+lay on the doormat: a postcard from Uncle Vernon\'s sister Marge, who was
+vacationing on the Isle of Wight, a brown envelope that looked like a
+bill, and -- a letter for Harry.
+
+Harry picked it up and stared at it, his heart twanging like a giant
+elastic band. No one, ever, in his whole life, had written to him. Who
+would? He had no friends, no other relatives -- he didn\'t belong to the
+library, so he\'d never even got rude notes asking for books back. Yet
+here it was, a letter, addressed so plainly there could be no mistake:
+
+Mr. H. Potter
+
+The Cupboard under the Stairs
+
+4 Privet Drive
+
+Little Whinging
+
+Surrey
+
+The envelope was thick and heavy, made of yellowish parchment, and the
+address was written in emerald-green ink. There was no stamp.
+
+Turning the envelope over, his hand trembling, Harry saw a purple wax
+seal bearing a coat of arms; a lion, an eagle, a badger, and a snake
+surrounding a large letter H.
+
+"Hurry up, boy!" shouted Uncle Vernon from the kitchen. "What are you
+doing, checking for letter bombs?" He chuckled at his own joke.
+
+Harry went back to the kitchen, still staring at his letter. He handed
+Uncle Vernon the bill and the postcard, sat down, and slowly began to
+open the yellow envelope.
+
+Uncle Vernon ripped open the bill, snorted in disgust, and flipped over
+the postcard.
+
+"Marge\'s ill," he informed Aunt Petunia. "Ate a funny whelk. --."
+
+"Dad!" said Dudley suddenly. "Dad, Harry\'s got something!"
+
+Harry was on the point of unfolding his letter, which was written on the
+same heavy parchment as the envelope, when it was jerked sharply out of
+his hand by Uncle Vernon.
+
+"That\'s mine!" said Harry, trying to snatch it back.
+
+"Who\'d be writing to you?" sneered Uncle Vernon, shaking the letter open
+with one hand and glancing at it. His face went from red to green faster
+than a set of traffic lights. And it didn\'t stop there. Within seconds
+it was the grayish white of old porridge.
+
+"P-P-Petunia!" he gasped.
+
+Dudley tried to grab the letter to read it, but Uncle Vernon held it
+high out of his reach. Aunt Petunia took it curiously and read the first
+line. For a moment it looked as though she might faint. She clutched her
+throat and made a choking noise.
+
+"Vernon! Oh my goodness -- Vernon!"
+
+They stared at each other, seeming to have forgotten that Harry and
+Dudley were still in the room. Dudley wasn\'t used to being ignored. He
+gave his father a sharp tap on the head with his Smelting stick.
+
+"I want to read that letter," he said loudly. want to read it," said
+Harry furiously, "as it\'s mine."
+
+"Get out, both of you," croaked Uncle Vernon, stuffing the letter back
+inside its envelope.
+
+Harry didn\'t move.
+
+I WANT MY LETTER!" he shouted.
+
+"Let me see it!" demanded Dudley.
+
+"OUT!" roared Uncle Vernon, and he took both Harry and Dudley by the
+scruffs of their necks and threw them into the hall, slamming the
+kitchen door behind them. Harry and Dudley promptly had a furious but
+silent fight over who would listen at the keyhole; Dudley won, so Harry,
+his glasses dangling from one ear, lay flat on his stomach to listen at
+the crack between door and floor.
+
+"Vernon," Aunt Petunia was saying in a quivering voice, "look at the
+address -- how could they possibly know where he sleeps? You don\'t think
+they\'re watching the house?"
+
+"Watching -- spying -- might be following us," muttered Uncle Vernon
+wildly.
+
+"But what should we do, Vernon? Should we write back? Tell them we don\'t
+want --"
+
+Harry could see Uncle Vernon\'s shiny black shoes pacing up and down the
+kitchen.
+
+"No," he said finally. "No, we\'ll ignore it. If they don\'t get an
+answer... Yes, that\'s best... we won\'t do anything....
+
+"But --"
+
+"I\'m not having one in the house, Petunia! Didn\'t we swear when we took
+him in we\'d stamp out that dangerous nonsense?"
+
+That evening when he got back from work, Uncle Vernon did something he\'d
+never done before; he visited Harry in his cupboard.
+
+"Where\'s my letter?" said Harry, the moment Uncle Vernon had squeezed
+through the door. "Who\'s writing to me?"
+
+"No one. it was addressed to you by mistake," said Uncle Vernon shortly.
+"I have burned it."
+
+"It was not a mistake," said Harry angrily, "it had my cupboard on it."
+
+"SILENCE!" yelled Uncle Vernon, and a couple of spiders fell from the
+ceiling. He took a few deep breaths and then forced his face into a
+smile, which looked quite painful.
+
+"Er -- yes, Harry -- about this cupboard. Your aunt and I have been
+thinking... you\'re really getting a bit big for it... we think it might
+be nice if you moved into Dudley\'s second bedroom.
+
+"Why?" said Harry.
+
+"Don\'t ask questions!" snapped his uncle. "Take this stuff upstairs,
+now."
+
+The Dursleys\' house had four bedrooms: one for Uncle Vernon and Aunt
+Petunia, one for visitors (usually Uncle Vernon\'s sister, Marge), one
+where Dudley slept, and one where Dudley kept all the toys and things
+that wouldn\'t fit into his first bedroom. It only took Harry one trip
+upstairs to move everything he owned from the cupboard to this room. He
+sat down on the bed and stared around him. Nearly everything in here was
+broken. The month-old video camera was lying on top of a small, working
+tank Dudley had once driven over the next door neighbor\'s dog; in the
+corner was Dudley\'s first-ever television set, which he\'d put his foot
+through when his favorite program had been canceled; there was a large
+birdcage, which had once held a parrot that Dudley had swapped at school
+for a real air rifle, which was up on a shelf with the end all bent
+because Dudley had sat on it. Other shelves were full of books. They
+were the only things in the room that looked as though they\'d never been
+touched.
+
+From downstairs came the sound of Dudley bawling at his mother, I don\'t
+want him in there... I need that room... make him get out...."
+
+Harry sighed and stretched out on the bed. Yesterday he\'d have given
+anything to be up here. Today he\'d rather be back in his cupboard with
+that letter than up here without it.
+
+Next morning at breakfast, everyone was rather quiet. Dudley was in
+shock. He\'d screamed, whacked his father with his Smelting stick, been
+sick on purpose, kicked his mother, and thrown his tortoise through the
+greenhouse roof, and he still didn\'t have his room back. Harry was
+thinking about this time yesterday and bitterly wishing he\'d opened the
+letter in the hall. Uncle Vernon and Aunt Petunia kept looking at each
+other darkly.
+
+When the mail arrived, Uncle Vernon, who seemed to be trying to be nice
+to Harry, made Dudley go and get it. They heard him banging things with
+his Smelting stick all the way down the hall. Then he shouted, "There\'s
+another one! \'Mr. H. Potter, The Smallest Bedroom, 4 Privet Drive --\'"
+
+With a strangled cry, Uncle Vernon leapt from his seat and ran down the
+hall, Harry right behind him. Uncle Vernon had to wrestle Dudley to the
+ground to get the letter from him, which was made difficult by the fact
+that Harry had grabbed Uncle Vernon around the neck from behind. After a
+minute of confused fighting, in which everyone got hit a lot by the
+Smelting stick, Uncle Vernon straightened up, gasping for breath, with
+Harry\'s letter clutched in his hand.
+
+"Go to your cupboard -- I mean, your bedroom," he wheezed at Harry.
+"Dudley -- go -- just go."
+
+Harry walked round and round his new room. Someone knew he had moved out
+of his cupboard and they seemed to know he hadn\'t received his first
+letter. Surely that meant they\'d try again? And this time he\'d make sure
+they didn\'t fail. He had a plan.
+
+The repaired alarm clock rang at six o\'clock the next morning. Harry
+turned it off quickly and dressed silently. He mustn\'t wake the
+Dursleys. He stole downstairs without turning on any of the lights.
+
+He was going to wait for the postman on the corner of Privet Drive and
+get the letters for number four first. His heart hammered as he crept
+across the dark hall toward the front door --
+
+Harry leapt into the air; he\'d trodden on something big and squashy on
+the doormat -- something alive!
+
+Lights clicked on upstairs and to his horror Harry realized that the
+big, squashy something had been his uncle\'s face. Uncle Vernon had been
+lying at the foot of the front door in a sleeping bag, clearly making
+sure that Harry didn\'t do exactly what he\'d been trying to do. He
+shouted at Harry for about half an hour and then told him to go and make
+a cup of tea. Harry shuffled miserably off into the kitchen and by the
+time he got back, the mail had arrived, right into Uncle Vernon\'s lap.
+Harry could see three letters addressed in green ink.
+
+I want --" he began, but Uncle Vernon was tearing the letters into
+pieces before his eyes. Uncle Vernon didnt go to work that day. He
+stayed at home and nailed up the mail slot.
+
+"See," he explained to Aunt Petunia through a mouthful of nails, "if
+they can\'t deliver them they\'ll just give up."
+
+"I\'m not sure that\'ll work, Vernon."
+
+"Oh, these people\'s minds work in strange ways, Petunia, they\'re not
+like you and me," said Uncle Vernon, trying to knock in a nail with the
+piece of fruitcake Aunt Petunia had just brought him.
+
+On Friday, no less than twelve letters arrived for Harry. As they
+couldn\'t go through the mail slot they had been pushed under the door,
+slotted through the sides, and a few even forced through the small
+window in the downstairs bathroom.
+
+Uncle Vernon stayed at home again. After burning all the letters, he got
+out a hammer and nails and boarded up the cracks around the front and
+back doors so no one could go out. He hummed "Tiptoe Through the Tulips"
+as he worked, and jumped at small noises.
+
+On Saturday, things began to get out of hand. Twenty-four letters to
+Harry found their way into the house, rolled up and hidden inside each
+of the two dozen eggs that their very confused milkman had handed Aunt
+Petunia through the living room window. While Uncle Vernon made furious
+telephone calls to the post office and the dairy trying to find someone
+to complain to, Aunt Petunia shredded the letters in her food processor.
+
+"Who on earth wants to talk to you this badly?" Dudley asked Harry in
+amazement.
+
+On Sunday morning, Uncle Vernon sat down at the breakfast table looking
+tired and rather ill, but happy.
+
+"No post on Sundays," he reminded them cheerfully as he spread marmalade
+on his newspapers, "no damn letters today --"
+
+Something came whizzing down the kitchen chimney as he spoke and caught
+him sharply on the back of the head. Next moment, thirty or forty
+letters came pelting out of the fireplace like bullets. The Dursleys
+ducked, but Harry leapt into the air trying to catch one.
+
+"Out! OUT!"
+
+Uncle Vernon seized Harry around the waist and threw him into the hall.
+When Aunt Petunia and Dudley had run out with their arms over their
+faces, Uncle Vernon slammed the door shut. They could hear the letters
+still streaming into the room, bouncing off the walls and floor.
+
+"That does it," said Uncle Vernon, trying to speak calmly but pulling
+great tufts out of his mustache at the same time. I want you all back
+here in five minutes ready to leave. We\'re going away. Just pack some
+clothes. No arguments!"
+
+He looked so dangerous with half his mustache missing that no one dared
+argue. Ten minutes later they had wrenched their way through the
+boarded-up doors and were in the car, speeding toward the highway.
+Dudley was sniffling in the back seat; his father had hit him round the
+head for holding them up while he tried to pack his television, VCR, and
+computer in his sports bag.
+
+They drove. And they drove. Even Aunt Petunia didn\'t dare ask where they
+were going. Every now and then Uncle Vernon would take a sharp turn and
+drive in the opposite direction for a while. "Shake\'em off... shake \'em
+off," he would mutter whenever he did this.
+
+They didn\'t stop to eat or drink all day. By nightfall Dudley was
+howling. He\'d never had such a bad day in his life. He was hungry, he\'d
+missed five television programs he\'d wanted to see, and he\'d never gone
+so long without blowing up an alien on his computer.
+
+Uncle Vernon stopped at last outside a gloomy-looking hotel on the
+outskirts of a big city. Dudley and Harry shared a room with twin beds
+and damp, musty sheets. Dudley snored but Harry stayed awake, sitting on
+the windowsill, staring down at the lights of passing cars and
+wondering....
+
+They ate stale cornflakes and cold tinned tomatoes on toast for
+breakfast the next day. They had just finished when the owner of the
+hotel came over to their table.
+
+"\'Scuse me, but is one of you Mr. H. Potter? Only I got about an \'undred
+of these at the front desk."
+
+She held up a letter so they could read the green ink address:
+
+Mr. H. Potter
+
+Room 17
+
+Railview Hotel
+
+Cokeworth
+
+Harry made a grab for the letter but Uncle Vernon knocked his hand out
+of the way. The woman stared.
+
+"I\'ll take them," said Uncle Vernon, standing up quickly and following
+her from the dining room.
+
+Wouldn\'t it be better just to go home, dear?" Aunt Petunia suggested
+timidly, hours later, but Uncle Vernon didn\'t seem to hear her. Exactly
+what he was looking for, none of them knew. He drove them into the
+middle of a forest, got out, looked around, shook his head, got back in
+the car, and off they went again. The same thing happened in the middle
+of a plowed field, halfway across a suspension bridge, and at the top of
+a multilevel parking garage.
+
+"Daddy\'s gone mad, hasn\'t he?" Dudley asked Aunt Petunia dully late that
+afternoon. Uncle Vernon had parked at the coast, locked them all inside
+the car, and disappeared.
+
+
+<<Second book>>
+Outstanding European Travel Plans
+
+The Classic European Capitals Adventure: A 14-Day Odyssey of History, Art, and Culture
+
+Europe, a continent steeped in millennia of history, brimming with artistic expression, and pulsating with diverse cultures, has captivated travelers for centuries. For the first-time European explorer, the sheer volume of potential destinations can be overwhelming. Where to begin? This meticulously crafted 14-day itinerary provides a perfect introduction to the continent's most iconic capital cities: the romantic allure of Paris, the regal grandeur of London, and the ancient majesty of Rome.
+
+This is not merely a superficial checklist of famous landmarks; it's a carefully orchestrated odyssey designed to ignite the senses and leave an enduring impression. It's a journey that delves beneath the surface, exploring hidden neighborhoods, engaging with local artisans, and savoring authentic culinary experiences. The pace is dynamic, designed to maximize your time, but the rewards are unparalleled. Imagine yourself transported back in time within the opulent Palace of Versailles, feeling the weight of history within the formidable Tower of London, and standing in awe before the ancient grandeur of the Roman Forum. All of this, and much more, is achievable within a captivating fortnight. This itinerary is crafted not just to see, but to truly experience Europe.
+
+Duration: 14 Days / 13 Nights
+
+Theme: History, Art, Culture, Iconic Landmarks, Culinary Delights, Hidden Gems, Local Experiences
+
+Destinations: Paris (France), London (England), Rome (Italy)
+
+Plan at a Glance:
+
+Days 1-3: Paris, France – Beyond the Postcard: Unveiling the Parisian Soul. We'll delve deeper than the iconic landmarks, exploring hidden neighborhoods, engaging with local artisans, indulging in authentic culinary experiences, and truly immersing ourselves in the City of Lights' unique charm.
+
+Days 4-6: London, England – From Royal Grandeur to Modern Vibrancy: Discovering London's Multifaceted Identity. This segment goes beyond the royal sights, exploring historical depths, embracing the vibrant cultural scene, experiencing the city's diverse culinary offerings, and uncovering its hidden pockets of creativity.
+
+Days 7-9: Rome, Italy – Walking Through Time: Experiencing the Eternal City's Ancient Majesty and Artistic Renaissance. We'll step back through millennia to witness the awe-inspiring marvels of the Roman Empire, connect with the spiritual heart of the Catholic Church, admire Renaissance masterpieces, and savor the authentic flavors of Roman cuisine.
+
+Days 10-11: Travel Days/Flex Days – Unscripted Moments: Customizing Your European Adventure. These days offer the flexibility to adapt to your individual pace and interests, allowing for comfortable travel, well-deserved rest, or the opportunity to delve deeper into the cities that resonate most profoundly.
+
+Days 12-14: Departure – Reflecting on the Journey: Taking Europe Home. As you prepare for your return, we'll encourage reflection on the transformative experiences, unforgettable moments, and lasting memories created throughout this European adventure.
+
+Detailed Itinerary:
+
+Day 1-3: Paris, France - The City of Lights: A Parisian Rhapsody – Extended Edition
+
+Paris, the City of Lights, is a city of dreams, romance, and unparalleled beauty. But to truly understand Paris, one must venture beyond the postcard-perfect images. It's in the hidden courtyards, the bustling markets, and the charming bistros that the true Parisian soul resides. This extended itinerary is designed to capture that essence, inviting you to immerse yourself in the city's unique charm and discover its hidden gems.
+
+Accommodation:
+
+Choosing the right accommodation is crucial for a fulfilling Parisian experience. Different neighborhoods offer distinct atmospheres and price points.
+
+Marais District: History, Elegance, and Hidden Delights: Located in the heart of Paris, the Marais is a historical treasure trove. It's a neighborhood of elegant mansions ("hôtels particuliers"), hidden courtyards, and a rich Jewish heritage. Beyond the trendy boutiques and art galleries that now populate its streets, the Marais whispers tales of aristocracy, revolution, and resilience.
+
+Place des Vosges: Begin your exploration at the Place des Vosges, one of the most beautiful squares in Paris. This meticulously planned square, with its harmonious architecture and central park, provides a serene oasis in the bustling city. Constructed in the early 17th century, it was once a popular spot for aristocratic duels and festivities. Today, it's a place to relax, admire the architecture, and soak up the Parisian atmosphere.
+
+Musée Carnavalet: Delve deeper into the city's history at the Musée Carnavalet, dedicated to the history of Paris. Housed in two magnificent hôtels particuliers, the museum showcases artifacts, paintings, and documents that tell the story of Paris from its earliest settlements to the present day. This is the perfect place to gain a deeper understanding of the city's evolution and its cultural identity.
+
+Jewish Quarter (Pletzl): Explore the historic Jewish Quarter, known as the Pletzl. This area has been a center of Jewish life in Paris for centuries, and it's filled with synagogues, kosher restaurants, and shops selling traditional Jewish goods. Wander through the narrow streets and experience the vibrant culture of this unique community.
+
+Accommodation Recommendations: Consider staying in a boutique hotel housed in a restored 17th-century building in the Marais. Many of these hotels offer charming rooms with historical details and a sense of Parisian elegance. Look for hotels with courtyards or gardens for a peaceful retreat from the city's hustle and bustle.
+
+Latin Quarter: Student Life, Literary History, and Bohemian Charm: On the Left Bank of the Seine, the Latin Quarter pulses with intellectual energy and bohemian spirit. Historically the home of the Sorbonne University and numerous prestigious schools, it's a neighborhood that has nurtured generations of thinkers, writers, and artists. The Latin Quarter is more than just a student hangout; it's a place steeped in literary history and artistic expression.
+
+Shakespeare and Company: No literary pilgrimage to Paris is complete without a visit to Shakespeare and Company, the iconic English-language bookstore. This legendary bookstore has been a haven for writers and intellectuals for decades, and it continues to be a vibrant hub for literary culture. Browse the shelves, attend a reading, or simply soak up the atmosphere of this literary landmark.
+
+Sorbonne University: Explore the Sorbonne University, one of the oldest and most prestigious universities in Europe. While access to the interior may be limited, admire the architecture of the buildings and soak up the intellectual atmosphere of the campus.
+
+Panthéon: Visit the Panthéon, a neoclassical monument that houses the tombs of famous French figures, including Voltaire, Rousseau, Victor Hugo, and Marie Curie. This impressive building is a testament to French intellectual and cultural achievements.
+
+Luxembourg Gardens: Wander through the Luxembourg Gardens, a beautiful park that offers a respite from the city's hustle and bustle. Admire the formal gardens, relax by the fountains, or take a stroll along the tree-lined paths.
+
+Accommodation Recommendations: Consider staying in a historic hotel in the Latin Quarter with a literary past. Many hotels in this neighborhood have been frequented by writers and intellectuals for centuries, and they offer a unique and atmospheric experience.
+
+Considerations for Accommodation:
+
+Research: Thoroughly research accommodation options based on your preferred atmosphere, budget, and accessibility requirements. Read reviews from other travelers to get a sense of the quality and service of different hotels and apartments.
+
+Book in Advance: Book your accommodation well in advance, especially if you're traveling during peak season (summer, holidays, fashion week). Paris is a popular destination, and the best hotels and apartments tend to fill up quickly.
+
+Location and Transportation: Consider the proximity of your accommodation to metro stations, bus stops, and other transportation options. Paris has an excellent public transportation system, but being close to a metro station will make it easier to get around the city. Also, factor in the walkability of the neighborhood; some neighborhoods are more pedestrian-friendly than others.
+
+Amenities: Look for hotels with amenities that are important to you, such as air conditioning (especially during the summer months), free Wi-Fi, breakfast included, and a concierge service.
+
+Personal Touch: Consider staying in a smaller, family-run hotel for a more personal and authentic experience. These hotels often offer a more intimate atmosphere and a higher level of personalized service.
+
+Activities:
+
+Paris offers an endless array of activities, from iconic landmarks to hidden gems. This itinerary provides a framework for your exploration, but feel free to customize it to your interests and preferences.
+
+Arrival & Seine Stroll: Beyond the Bridges: After checking into your hotel, begin your Parisian adventure with a leisurely stroll along the Seine River.
+
+Guided Walking Tour: Instead of simply walking along the riverbank, consider taking a guided walking tour that focuses on the history and architecture of the Seine's bridges. These tours provide fascinating insights into the construction, significance, and artistic details of these iconic structures.
+
+Stories Behind the Bridges: Learn about the history of each bridge, its unique architectural style, and the stories behind the statues and sculptures that adorn them. Discover the Pont Neuf, the oldest bridge in Paris, and the Pont Alexandre III, one of the most elegant.
+
+Different Perspectives: A guided tour will provide a deeper appreciation for the Seine and its role in Parisian history and culture.
+
+Eiffel Tower: Evening Illumination and Hidden History: No trip to Paris is complete without a visit to the Eiffel Tower.
+
+Pre-Booking: Pre-booking tickets is essential to avoid long queues, especially during peak season. Book your tickets online in advance to secure your preferred time slot.
+
+Off-Peak Hours: Consider visiting the Eiffel Tower during off-peak hours, such as early morning or late evening, to avoid the biggest crowds.
+
+Construction and Role: Learn about the tower's construction, its role in the 1889 World's Fair, and its evolution as a symbol of Paris.
+
+Taking the Stairs: For a more challenging but rewarding experience, consider taking the stairs instead of the elevator to the first or second level.
+
+Picnic on the Champ de Mars: Enjoy a picnic on the Champ de Mars with the Eiffel Tower as your backdrop. This is a classic Parisian experience that allows you to relax and soak up the atmosphere.
+
+Guided Tours: Consider a guided tour that focuses on the history and engineering of the Eiffel Tower. These tours provide fascinating details about the tower's design, construction, and cultural significance.
+
+Louvre Museum: Focusing Your Visit and Discovering Hidden Gems: The Louvre Museum is one of the largest and most famous museums in the world, housing an unparalleled collection of art from around the globe.
+
+Strategic Planning: It's impossible to see everything in the Louvre in one day. Plan your visit carefully and focus on the areas that interest you most. Download a map of the museum and identify the galleries you want to visit.
+
+Guided Tours and Masterpieces: Consider a guided tour that highlights the museum's masterpieces and hidden gems. A knowledgeable guide can help you navigate the vast collection and provide insights into the art and history.
+
+Mobile App: Download the Louvre's mobile app for interactive maps, audio guides, and information about the museum's collections.
+
+Less Crowded Wings: Explore the museum's less crowded wings, such as the Egyptian antiquities or the Islamic art collections. These areas often offer a more intimate and rewarding experience.
+
+Tuileries Garden: Visit the Tuileries Garden, located next to the Louvre, for a relaxing stroll. This beautiful garden provides a tranquil escape from the crowds of the museum.
+
+Notre Dame Cathedral: Reflections and Remembrance: Even while under reconstruction, Notre Dame Cathedral remains a powerful symbol of Paris.
+
+Memorial Site: Visit the memorial site and reflect on the cathedral's history and its significance to the city. Take a moment to appreciate the architectural beauty of the cathedral's exterior, even as it undergoes restoration.
+
+Île de la Cité: Walk around the Île de la Cité, the island on which Notre Dame is located, and explore the surrounding area, including the Conciergerie, a former royal palace and prison.
+
+Nearby Churches: Consider attending a service at a nearby church, such as Saint-Germain-des-Prés or Saint-Séverin, to experience the spiritual side of Paris.
+
+Sainte-Chapelle: A Kaleidoscope of Light and History: Sainte-Chapelle is a masterpiece of Gothic architecture, renowned for its stunning stained-glass windows.
+
+Ample Time: Allocate ample time to admire the intricate details of the stained-glass windows and learn about their biblical themes. The windows depict scenes from the Old and New Testaments, and they are a testament to the skill and artistry of the medieval craftsmen who created them.
+
+Conciergerie: Visit the Conciergerie, located next door, to learn about its history as a royal palace and prison. The Conciergerie was once the home of French kings, and it later served as a prison during the French Revolution.
+
+Concerts: Consider attending a concert at Sainte-Chapelle for a truly unforgettable experience. The acoustics in the chapel are superb, and the setting is magical.
+
+Montmartre & Sacré-Cœur Basilica: Artistic Inspiration and Panoramic Views: Montmartre, the highest point in Paris, is a neighborhood known for its artistic history and its stunning views of the city.
+
+Walking Tour: Take a walking tour of Montmartre and discover its hidden streets, artists' studios, and charming cafes.
+
+Musée de Montmartre: Visit the Musée de Montmartre to learn about the history of the neighborhood and its artistic heritage. The museum is housed in a former artists' residence, and it showcases paintings, drawings, and photographs that depict life in Montmartre.
+
+Sacré-Cœur Basilica: Climb to the Sacré-Cœur Basilica for panoramic views of the city. The basilica is a stunning example of Romanesque-Byzantine architecture, and it's one of the most iconic landmarks in Paris.
+
+Crepes: Enjoy a crepe from a street vendor. Montmartre is famous for its crepes, and they're the perfect snack to enjoy while exploring the neighborhood.
+
+Attend a Service: Consider attending a service at the Sacré-Cœur Basilica.
+
+Palace of Versailles: Beyond the Hall of Mirrors: A day trip to Versailles, the former royal palace, is an essential part of any Parisian experience.
+
+Lavish Interiors: Explore the palace's lavish interiors, including the Hall of Mirrors, the Royal Apartments, and the Chapel. The Hall of Mirrors is one of the most famous rooms in the palace, and it's a testament to the opulence and grandeur of the French monarchy.
+
+Vast Gardens: Wander through the vast and meticulously manicured gardens, including the Grand Trianon and the Petit Trianon.
+
+Bike Rental: Rent a bike to explore the gardens more efficiently. The gardens are vast, and a bike is a great way to see more of them.
+
+Queen's Hamlet: Visit the Queen's Hamlet, a picturesque village built for Marie Antoinette. This charming village provides a glimpse into the Queen's private life.
+
+Picnic Lunch: Pack a picnic lunch to enjoy amidst the grandeur. There are several picnic areas in the gardens where you can relax and enjoy the scenery.
+
+Guided Tour: Consider a guided tour that focuses on the history and architecture of Versailles.
+
+Seine River Cruise: Romantic Views and Parisian Charm: Conclude your Parisian adventure with a Seine River cruise.
+
+Commentary: Choose a cruise that offers commentary on the landmarks you pass.
+
+Dinner Cruise: Enjoy a dinner cruise for a romantic experience.
+
+Live Music: Listen to live music on board.
+
+Food:
+
+Paris is a culinary paradise, offering a wide range of delicious and authentic French food.
+
+Croissants & Pain au Chocolat: The Art of the Bakery: Start your day with a classic French pastry from a boulangerie artisanale (artisanal bakery). Look for bakeries that make their pastries fresh daily using traditional methods.
+
+Macarons: A Sweet Indulgence: Indulge in these colorful and delicate almond meringue cookies. Visit Ladurée and Pierre Hermé for the classic experience, but also explore smaller, independent patisseries for unique flavors.
+
+Steak Frites: A Bistro Classic: Enjoy a quintessential French steak frites at a traditional bistro.
+
+French Onion Soup: A Culinary Comfort: Warm up with a rich and flavorful soupe à l'oignon gratinée (French onion soup) topped with melted cheese.
+
+Local Markets: A Feast for the Senses: Explore local markets like Marché des Enfants Rouges and Marché Bastille for cheese, wine, bread, and other local delicacies.
+
+Bistros: Authentic French Cuisine: Enjoy a traditional French dinner at a bistro. Look for menus that offer "plat du jour" (dish of the day) for a taste of authentic French cuisine.
+
+(Days 4-6: London, England - History and Modernity: Beyond the Landmarks – Extended Edition and Days 7-9: Rome, Italy - Ancient Wonders: Experiencing the Eternal City – Extended Edition will follow the same pattern as above, with detailed elaborations on Accommodation, Activities, and Food, including specific recommendations and insights. Due to space constraints, the full expansion of those sections is not included here. They would continue the same level of detail as the Paris section.)
+
+Day 10-11: Travel Days/Flex Days: Designing Your Own Adventure
+
+These strategically placed "flex days" are crucial to ensuring that your European adventure remains a personal and enriching experience. The pace of the first nine days is deliberately full, immersing you in the highlights of Paris, London, and Rome. However, individual interests and energy levels vary. These two days provide the space to breathe, relax, and pursue activities that truly resonate with you.
+
+Option 1: Rest and Relaxation: Recharge Your Batteries: After a whirlwind tour of three major cities, you might simply need to relax and recharge. This is perfectly acceptable! Use these days to catch up on sleep, relax at your hotel, read a book in a local park, or simply wander around the city without a strict itinerary. Sometimes the best travel experiences come from unplanned moments of serendipity. Find a quiet cafe and people-watch, visit a local spa for a massage, or take a leisurely bike ride through a scenic neighborhood.
+
+Option 2: Day Trip: Expanding Your Horizons: If you're feeling adventurous, consider taking a day trip from one of the cities you've visited. Day trips offer the opportunity to explore a different region, experience a different culture, or visit a specific attraction that interests you.
+
+From Paris: Consider a day trip to the Champagne region, where you can tour vineyards, sample sparkling wine, and learn about the champagne-making process. Alternatively, visit the charming medieval town of Chartres, famous for its magnificent cathedral.
+
+From London: Explore the Cotswolds, a picturesque region of rolling hills, charming villages, and historic manor houses. Another option is to visit Oxford, home to one of the world's oldest and most prestigious universities.
+
+From Rome: A day trip to Pompeii is possible via train, allowing you to explore the remarkably preserved ruins of this ancient Roman city destroyed by the eruption of Mount Vesuvius. A very long day trip to Florence would also be an option, though a longer stay would be recommended to truly experience the city.
+
+Option 3: Revisit Highlights: A Deeper Immersion: If you found a particular sight, museum, or experience that you especially enjoyed, use these days to revisit it for a deeper immersion. Perhaps you want to spend more time in the Louvre, explore a different neighborhood in London, or return to the Roman Forum to wander among the ruins at your own pace.
+
+Day 12-14: Return Home: Reflecting on Your European Odyssey
+
+As your 14-day European adventure draws to a close, it's time to prepare for your departure and reflect on the incredible experiences and memories you've made.
+
+Souvenirs: Purchase souvenirs to remember your trip. Consider buying unique and locally made items that reflect the culture and history of the cities you've visited. Avoid mass-produced tourist trinkets and instead look for handcrafted goods, artwork, or local delicacies.
+
+Sharing Your Stories: Share your stories with friends and family. Relive your favorite moments, show them your photos, and inspire them to plan their own European adventure.
+
+Reflection: Take some time to reflect on the transformative experiences, unforgettable moments, and lasting memories created throughout this European adventure. Consider keeping a journal to record your thoughts and feelings.
+
+Planning Future Trips: Start planning your next European adventure! This 14-day itinerary is just a starting point. There's so much more to explore and discover in Europe.
+
+Budget Considerations:
+
+This itinerary can be adapted to different budgets. Careful planning and smart choices can help you experience the magic of Paris, London, and Rome without breaking the bank.
+
+Accommodation: Hostels and Airbnb offer budget-friendly options. Staying slightly outside the city center can also save money. Consider staying in guesthouses or budget hotels for a more affordable option.
+
+Transportation: Utilize public transport to save money. Walking is a great way to explore the cities. Book train and flight tickets in advance. Look for discounts and promotions on public transport passes.
+
+Food: Eat at local markets and smaller restaurants to save money. Pack snacks and drinks to avoid tourist traps. Opt for street food or picnic lunches instead of expensive restaurants.
+
+Attractions: Purchase a city pass for discounted entry to attractions. Take advantage of free museum days or visit free attractions like parks and churches.
+
+Tips for a Smooth Trip:
+
+Book Well in Advance: Secure accommodation, transportation (especially Eurostar), and popular attractions in advance, especially during peak season.
+
+Pack Light: Pack light to avoid lugging heavy suitcases. Choose versatile clothing items that can be mixed and matched.
+
+Learn Basic Phrases: Learning basic phrases in French, Italian, and English will be helpful.
+
+Stay Connected: Purchase a local SIM card or use a travel eSIM.
+
+Be Aware of Your Surroundings: Be mindful of your belongings and be aware of potential scams.
+
+Wear Comfortable Shoes: Wear comfortable shoes, as you'll be doing a lot of walking.
+
+Embrace the Culture: Be open to new experiences and embrace the local culture. Try new foods, learn about local customs, and interact with the locals.
+
+City-Specific Considerations:
+
+London: London is spread out, so public transport (the Tube) is essential. Consider an Oyster card or contactless payment.
+
+Rome & Paris: These cities are mostly walkable, but utilize the Metro for longer distances.
+
+This 14-day Classic European Capitals Adventure is a springboard for exploration. Customize it according to your interests and budget. With meticulous planning and an adventurous spirit, you're guaranteed an unforgettable journey through some of the world's most beautiful and culturally rich cities. Savor the magic of Paris, the grandeur of London, and the timeless beauty of Rome! Bon voyage! Buongiorno! Have a good trip!
+
+
+Exploring the Iberian Peninsula: A 14-Day Immersive Journey Through Spain and Portugal (7000 Words)
+This expansive 14-day itinerary delves deep into the heart of the Iberian Peninsula, promising an enriching and unforgettable exploration of Spain and Portugal. More than just a surface-level tour, this plan is designed to immerse you in the diverse cultures, tantalizing cuisines, and breathtaking landscapes that define this unique corner of Europe. Prepare for a sun-kissed adventure that blends historical immersion, artistic appreciation, culinary delights, and moments of pure relaxation. From the architectural fantasies of Antoni Gaudí in Barcelona to the soulful strains of Fado music in Lisbon, and the fortified flavors of Port wine in Porto, this journey offers a truly transformative travel experience.
+
+Duration: 14 Days / 13 Nights
+
+Theme: Culture, Cuisine, Beaches, History, Architecture, Music, Wine
+
+Destinations: Barcelona (Spain), Seville (Spain), Lisbon (Portugal), Porto (Portugal)
+
+Plan at a Glance:
+
+Days 1-3: Barcelona, Spain – Unveiling the Catalan Flair: A deep dive into Gaudí's architectural legacy, exploring vibrant markets, savoring Catalan cuisine, and relaxing on Mediterranean beaches. We'll uncover hidden gems and delve into the city's artistic soul.
+
+Days 4-6: Seville, Spain – Experiencing the Andalusian Charm: Immersing ourselves in the historical grandeur of Seville, exploring its magnificent cathedral and royal palace, witnessing the fiery passion of flamenco, indulging in authentic tapas, and considering a captivating day trip to Córdoba.
+
+Days 7-9: Lisbon, Portugal – Ascending the Hills, Unearthing History, and Embracing Fado: Discovering the charm of Lisbon's historic districts, riding the iconic Tram 28, exploring the architectural marvels of Belém, escaping to the fairytale landscapes of Sintra, and surrendering to the emotive power of Fado music.
+
+Days 10-11: Porto, Portugal – Savoring Port Wine and Discovering its Charm: Exploring the historic Ribeira district, marveling at the Dom Luís I Bridge, embarking on a journey into the world of Port wine with a cellar tour, immersing ourselves in literary history at Livraria Lello, and enjoying a scenic cruise on the Douro River.
+
+Days 12-13: Travel Days/Flex Days – Strategic days designed for relaxation, independent exploration, revisiting cherished sites, or accommodating unforeseen circumstances, allowing for a personalized and flexible travel experience.
+
+Day 14: Departure – Reflecting on the remarkable journey through the Iberian Peninsula as you prepare for your departure, carrying with you unforgettable memories and a newfound appreciation for the region's unique character.
+
+Detailed Itinerary:
+
+Day 1-3: Barcelona, Spain - Catalan Flair: Beyond the Surface
+
+Barcelona, a city where art and architecture intertwine, where the Mediterranean sun kisses golden beaches, and where Catalan culture thrives, deserves a thorough exploration. This expanded itinerary digs deeper than the typical tourist trail.
+
+Accommodation:
+
+Gothic Quarter (Barri Gòtic): Beyond its central location and medieval architecture, the Gothic Quarter holds a wealth of secrets. Explore its hidden courtyards, discover Roman ruins beneath the city streets, and uncover the stories behind its ancient buildings. Consider a guided walking tour to uncover its hidden history.
+
+El Born: Adjacent to the Gothic Quarter, El Born pulsates with contemporary creativity. Beyond its boutiques and galleries, explore its independent workshops, artisan studios, and vibrant nightlife scene. Discover the Picasso Museum, showcasing the artist's early works and connection to Barcelona.
+
+Considerations: Research accommodation options based on your preferred atmosphere. The Gothic Quarter offers historical charm, while El Born provides a trendier vibe. Consider the proximity to metro stations for seamless exploration. Air conditioning is a must during the hot summer months.
+
+Activities:
+
+Arrival & Alternative Ramblas Exploration: Skip the tourist hordes on Las Ramblas and explore the less crowded but equally charming La Rambla de Catalunya. This more upscale boulevard offers wider sidewalks, designer boutiques, and beautiful modernist buildings.
+
+Sagrada Família: An Architectural Revelation: Pre-booked tickets are paramount. Allocate ample time (at least 3 hours) to truly appreciate the Sagrada Família. Consider booking a guided tour that delves into Gaudí's symbolism, construction techniques, and the ongoing architectural challenges. Explore the museum below the basilica to understand the history and future plans. Climb one of the towers for panoramic views, but be aware of the potential for long wait times.
+
+Park Güell: A Whimsical Escape: Beyond the iconic mosaic benches, explore the quieter corners of Park Güell. Discover the Casa Museu Gaudí, where the architect lived, and learn about his personal life and creative process. Attend a sunset session in the park to experience the magical atmosphere as the city lights begin to twinkle.
+
+Casa Batlló & Casa Milà (La Pedrera): Modernist Masterpieces: Instead of just a quick visit, dedicate a half-day to exploring both Casa Batlló and Casa Milà. At Casa Batlló, admire the organic forms, vibrant colors, and intricate details that evoke the underwater world. At Casa Milà, explore the rooftop terrace with its surreal chimney sculptures and enjoy panoramic city views. Consider an evening visit to Casa Batlló for a magical light and sound show.
+
+Boqueria Market: A Culinary Journey: Beyond the visual spectacle, engage with the vendors, sample local delicacies, and learn about Catalan culinary traditions. Try jamón ibérico, fresh seafood, local cheeses, and seasonal fruits. Arrive early in the morning to avoid the crowds and experience the market at its most vibrant. Consider a cooking class that utilizes ingredients from the Boqueria Market.
+
+Barceloneta Beach: Beyond the Sand: Explore the Barceloneta neighborhood, a former fishing village, and sample fresh seafood at one of the beachfront restaurants. Take a stroll along the promenade, rent a bike, or try stand-up paddleboarding. Escape the crowds by venturing to one of the less-known beaches further north or south of Barceloneta.
+
+Montjuïc Hill: A Panoramic Perspective: Allocate an entire day to exploring Montjuïc Hill. Visit the Montjuïc Castle for panoramic views and historical insights. Explore the Joan Miró Foundation, showcasing the works of the renowned Catalan artist. Visit the Olympic Park, a legacy of the 1992 Barcelona Olympics. Attend the Magic Fountain of Montjuïc show at night, a spectacular display of water, light, and music. Take the cable car up the hill for stunning views of the city.
+
+Food:
+
+Tapas Exploration: Venture beyond the tourist traps and explore the tapas bars in the El Born and Gràcia neighborhoods. Try regional specialties like pa amb tomàquet (bread rubbed with tomato), escalivada (grilled vegetables), and bombas (potato croquettes with spicy sauce).
+
+Paella Variations: While paella is a must-try, explore the different variations, such as arròs negre (black rice paella with squid ink) and fideuà (paella made with noodles instead of rice).
+
+Cava Tasting: Sample local Cava, a sparkling wine from the Penedès region, at a Cava bar or vineyard.
+
+Crema Catalana Indulgence: Try different variations of crema catalana, such as those flavored with citrus or cinnamon.
+
+Hidden Bodegas: Discover hidden bodegas in the Gothic Quarter and sample local wines.
+
+Day 4-6: Seville, Spain - Andalusian Charm: Into the Heart of Andalusia
+
+Seville, the vibrant capital of Andalusia, is a city that captivates with its Moorish heritage, passionate flamenco rhythms, and sun-drenched streets. This expanded itinerary takes you beyond the typical tourist sights and into the heart of Andalusian culture.
+
+Transportation:
+
+High-Speed Train (AVE): Book your AVE train tickets well in advance to secure the best prices and preferred seating. Consider purchasing a Renfe Spain Pass if you plan on traveling extensively by train in Spain.
+
+Accommodation:
+
+Santa Cruz Neighborhood (Old Jewish Quarter): A Deeper Dive: While beautiful, Santa Cruz can be crowded. Consider staying in the neighboring El Arenal district, which offers a more local atmosphere and is still within walking distance of the major attractions.
+
+Considerations: Look for accommodation with a rooftop terrace to enjoy panoramic city views. Be aware that Santa Cruz can be noisy at night.
+
+Activities:
+
+Seville Cathedral & Giralda: Architectural Grandeur: Allocate ample time (at least 3 hours) to explore the Seville Cathedral and Giralda. Climb to the top of the Giralda for breathtaking views of the city. Explore the cathedral's chapels, admire its artwork, and learn about its history.
+
+Alcázar of Seville: A Royal Retreat: Explore the Alcázar's hidden corners, admire its intricate tilework, and wander through its lush gardens. Learn about the Alcázar's history as a royal residence and its influence on Andalusian architecture. Consider a guided tour to gain a deeper understanding of its historical significance.
+
+Plaza de España: A Symbol of Spain: Take a horse-drawn carriage ride around Plaza de España for a unique perspective. Rent a rowboat and explore the canal. Visit the museums and cultural centers located within the plaza. Attend a performance or event at the plaza.
+
+Flamenco: A Cultural Immersion: Choose a flamenco show that features authentic performers and traditional music. Learn about the history and different styles of flamenco. Consider taking a flamenco dance lesson. Dress up in traditional flamenco attire.
+
+Cooking Class: A Culinary Journey: Learn to make traditional Andalusian dishes, such as gazpacho, salmorejo, paella, and tapas. Visit a local market to purchase fresh ingredients. Sample local wines and sherries. Enjoy the fruits of your labor with a delicious meal.
+
+Guadalquivir River: A Scenic Cruise: Take a river cruise on the Guadalquivir River and admire the views of the city. Learn about the river's history and its importance to Seville. Enjoy a sunset cruise for a romantic experience.
+
+Tapas Tour: A Culinary Adventure: Explore the tapas bars in the Triana neighborhood, known for its authentic tapas and lively atmosphere. Try regional specialties like pescaíto frito (fried fish) and espinacas con garbanzos (spinach with chickpeas).
+
+Córdoba (Day Trip): A Mesmerizing Blend: Take a day trip to Córdoba to see the Mezquita-Cathedral, a stunning example of Moorish architecture. Explore the Jewish Quarter, wander through its narrow streets, and visit its synagogues. Visit the Alcázar de los Reyes Cristianos, a former royal residence.
+
+Food:
+
+Tapas Discovery: Explore the diverse world of tapas in Seville. Venture beyond the typical tourist fare and try regional specialties. Ask the locals for recommendations.
+
+Sherry Tasting: Sample local sherry wines at a sherry bar. Learn about the different types of sherry and their production methods.
+
+Orange Grove Visit: Visit an orange grove and learn about the cultivation and harvesting of Seville oranges. Sample fresh orange juice and other orange-based products.
+
+Explore Triana Market: Visit the Triana Market and experience local Andalusian food.
+
+Day 7-9: Lisbon, Portugal - Hills, History, and Heart: Unveiling Lisbon's Soul
+
+Lisbon, Portugal's captivating capital, is a city of contrasts, where ancient history blends seamlessly with modern vibrancy. This enhanced itinerary delves deeper into Lisbon's soul, exploring its hidden corners, savoring its culinary delights, and immersing ourselves in its rich cultural heritage.
+
+Transportation:
+
+Lisbon Card: Consider purchasing a Lisbon Card for unlimited access to public transport and free entry to many attractions.
+
+Accommodation:
+
+Alfama District: Immersing in Authenticity: Beyond its Fado houses and narrow streets, Alfama offers a glimpse into Lisbon's traditional way of life. Seek out smaller, family-run guesthouses for a more authentic experience. Be prepared for hills and cobblestone streets.
+
+Baixa District: Central Convenience: While Baixa is central, it can be touristy. Consider staying in the neighboring Chiado district, which offers a more upscale atmosphere and is still within walking distance of the major attractions.
+
+Considerations: Consider accommodation options with a miradouro (viewpoint) for stunning city views.
+
+Activities:
+
+Alfama: Beyond the Postcard: Get intentionally lost in the Alfama, discovering hidden squares, local shops, and traditional cafes. Visit the Lisbon Cathedral, the oldest church in the city. Explore the Roman Theatre Museum, showcasing the ruins of a Roman theatre.
+
+São Jorge Castle: History and Panoramic Views: Explore the castle's ramparts, admire the views, and learn about its history as a royal residence. Attend a performance or event at the castle.
+
+Tram 28: A Classic Lisbon Experience: Ride Tram 28 early in the morning to avoid the crowds. Sit by the window to enjoy the best views. Be aware of pickpockets on the tram.
+
+Jerónimos Monastery: A Maritime Legacy: Take your time exploring the Jerónimos Monastery, admiring its intricate carvings and learning about its connection to the Age of Discovery.
+
+Belém Tower: A Guardian of Lisbon: Explore Belém Tower's different levels, admire its architecture, and learn about its role in protecting Lisbon.
+
+Pastéis de Belém: A Sweet Tradition: Enjoy a Pastel de Belém with a sprinkle of cinnamon and powdered sugar. Try other traditional Portuguese pastries.
+
+Sintra: A Fairytale Escape: Take a full day trip to Sintra, exploring Pena Palace, Quinta da Regaleira, and the Moorish Castle. Wear comfortable shoes for walking.
+
+Fado: An Evening of Soulful Music: Research different Fado houses and choose one that offers an authentic experience. Make a reservation in advance. Dress respectfully. Listen attentively to the music.
+
+Food:
+
+Seafood Extravaganza: Explore Lisbon's seafood restaurants and try dishes like cataplana (seafood stew), grilled sardines, and bacalhau à brás (shredded salt cod with eggs and potatoes).
+
+Bacalhau (Salt Cod): A Portuguese Staple: Try different variations of bacalhau, as the Portuguese claim to have 365 ways to cook it.
+
+Vinho Verde (Green Wine): A Refreshing Delight: Sample different types of vinho verde from the Minho region.
+
+Pastéis de Nata Workshop: Take a class and learn how to make Lisbon's famous custard tarts.
+
+Day 10-11: Porto, Portugal - Port Wine and Riverside Charm: A Northern Gem
+
+Porto, Portugal's second city, is a captivating destination that enchants visitors with its historic Ribeira district, iconic Dom Luís I Bridge, and world-renowned Port wine cellars. This enhanced itinerary explores Porto's unique charm, delving into its culinary delights and cultural treasures.
+
+Transportation:
+
+Andante Tour Card: Consider purchasing an Andante Tour card for unlimited travel on Porto's public transport.
+
+Accommodation:
+
+Ribeira District: Immersing in History and Atmosphere: Choose accommodation with views of the Douro River and Luís I Bridge. Be prepared for steep streets and lively nightlife.
+
+Vila Nova de Gaia: Port Wine Haven: Stay close to the Port wine cellars for easy access to tours and tastings. Enjoy quieter nights than in the Ribeira district.
+
+Considerations: Booking in advance is highly recommended, especially during peak season.
+
+Activities:
+
+Ribeira: A UNESCO World Heritage Site: Explore the Ribeira district on foot, admiring its colorful buildings, narrow streets, and historic charm. Visit the Palácio da Bolsa, a stunning stock exchange palace. Explore the São Francisco Church, known for its opulent gold-leaf interior.
+
+Dom Luís I Bridge: An Engineering Marvel: Walk across the Dom Luís I Bridge and admire the panoramic views of Porto and Vila Nova de Gaia. Take photos from the bridge at sunset for a magical experience.
+
+Port Wine Cellars: A Journey Through Flavor: Take a guided tour of a Port wine cellar and learn about the production process. Sample different types of Port wine, from tawny to ruby. Learn about the history of Port wine and its connection to Porto.
+
+Livraria Lello: A Literary Gem: Admire the bookstore's stunning architecture, including its spiral staircase and stained-glass ceiling.
+
+Douro River Cruise: A Scenic Voyage: Take a boat trip on the Douro River and admire the views of Porto and Vila Nova de Gaia. Learn about the history of the river and its importance to the region. Enjoy a sunset cruise for a romantic experience.
+
+Clérigos Church and Tower: A Panoramic Climb: Climb to the top of the Clérigos Tower for panoramic views of Porto. Admire the church's baroque architecture.
+
+Francesinha: A Local Delicacy: Sample a Francesinha sandwich at a local restaurant. Try different variations of the sandwich.
+
+Food:
+
+Francesinha Exploration: Try Francesinha sandwich at various restaurants and discuss your opinion with locals.
+
+Seafood Delight: Try various seafood options, specially fresh fishes.
+
+Explore Local bakeries: Enjoy a Portuguese Custard Tart on the go.
+
+Port Wine and Chocolate Pairing: Indulge in a Port wine and chocolate pairing experience.
+
+Day 12-13: Flex Days: Your Time, Your Choice
+
+These strategically placed flex days empower you to personalize your itinerary based on your preferences and discoveries.
+
+Options:
+
+Relaxation and Reflection: Dedicate a day to relaxation, allowing time to process your experiences and recharge for the journey ahead. Enjoy a spa treatment, relax by a pool, or simply unwind in your hotel room.
+
+Independent Exploration: Venture off the beaten path and discover hidden gems in any of the cities you've visited.
+
+Revisit Cherished Sites: Return to your favorite attractions for a more in-depth exploration or simply to soak in the atmosphere.
+
+Unforeseen Circumstances: Utilize these days to accommodate unforeseen travel delays or personal preferences.
+
+Day 14: Departure
+
+Prepare for your departure from Porto Airport (OPO), allowing ample time for airport procedures.
+
+Reflect on the incredible journey through the Iberian Peninsula, cherishing the memories and insights gained.
+
+Purchase any last-minute souvenirs to commemorate your adventure.
+
+This comprehensive 14-day itinerary offers a deeper and more immersive exploration of the Iberian Peninsula, promising a truly transformative travel experience. Embrace the rich cultures, savor the delectable cuisines, and discover the hidden gems that make Spain and Portugal so captivating. Enjoy your sun-kissed adventure!
+
+Summarization:""",
+        """There are two books, named <<First book>> and <<Second book>>, Pls do Summary and compare the content for these two books.
+You must tell the difference between two books.
+you will focus on identifying potential key themes, probable main plot points or central arguments, 
+and the overall tone of each book. You will approach this task assuming a broad readership, 
+creating summaries suitable for someone unfamiliar with the works. You will focusing on the core ideas and potential takeaways.
+You'll do my best to glean the heart of each book and present it in a clear and helpful manner. 
+
+
+<<First book>>
+Harry Potter and the Sorcerer\'s Stone
+
+
+CHAPTER ONE
+
+THE BOY WHO LIVED
+
+Mr. and Mrs. Dursley, of number four, Privet Drive, were proud to say
+that they were perfectly normal, thank you very much. They were the last
+people you\'d expect to be involved in anything strange or mysterious,
+because they just didn\'t hold with such nonsense.
+
+Mr. Dursley was the director of a firm called Grunnings, which made
+drills. He was a big, beefy man with hardly any neck, although he did
+have a very large mustache. Mrs. Dursley was thin and blonde and had
+nearly twice the usual amount of neck, which came in very useful as she
+spent so much of her time craning over garden fences, spying on the
+neighbors. The Dursleys had a small son called Dudley and in their
+opinion there was no finer boy anywhere.
+
+The Dursleys had everything they wanted, but they also had a secret, and
+their greatest fear was that somebody would discover it. They didn\'t
+think they could bear it if anyone found out about the Potters. Mrs.
+Potter was Mrs. Dursley\'s sister, but they hadn\'t met for several years;
+in fact, Mrs. Dursley pretended she didn\'t have a sister, because her
+sister and her good-for-nothing husband were as unDursleyish as it was
+possible to be. The Dursleys shuddered to think what the neighbors would
+say if the Potters arrived in the street. The Dursleys knew that the
+Potters had a small son, too, but they had never even seen him. This boy
+was another good reason for keeping the Potters away; they didn\'t want
+Dudley mixing with a child like that.
+
+When Mr. and Mrs. Dursley woke up on the dull, gray Tuesday our story
+starts, there was nothing about the cloudy sky outside to suggest that
+strange and mysterious things would soon be happening all over the
+country. Mr. Dursley hummed as he picked out his most boring tie for
+work, and Mrs. Dursley gossiped away happily as she wrestled a screaming
+Dudley into his high chair.
+
+None of them noticed a large, tawny owl flutter past the window.
+
+At half past eight, Mr. Dursley picked up his briefcase, pecked Mrs.
+Dursley on the cheek, and tried to kiss Dudley good-bye but missed,
+because Dudley was now having a tantrum and throwing his cereal at the
+walls. "Little tyke," chortled Mr. Dursley as he left the house. He got
+into his car and backed out of number four\'s drive.
+
+It was on the corner of the street that he noticed the first sign of
+something peculiar -- a cat reading a map. For a second, Mr. Dursley
+didn\'t realize what he had seen -- then he jerked his head around to
+look again. There was a tabby cat standing on the corner of Privet
+Drive, but there wasn\'t a map in sight. What could he have been thinking
+of? It must have been a trick of the light. Mr. Dursley blinked and
+stared at the cat. It stared back. As Mr. Dursley drove around the
+corner and up the road, he watched the cat in his mirror. It was now
+reading the sign that said Privet Drive -- no, looking at the sign; cats
+couldn\'t read maps or signs. Mr. Dursley gave himself a little shake and
+put the cat out of his mind. As he drove toward town he thought of
+nothing except a large order of drills he was hoping to get that day.
+
+But on the edge of town, drills were driven out of his mind by something
+else. As he sat in the usual morning traffic jam, he couldn\'t help
+noticing that there seemed to be a lot of strangely dressed people
+about. People in cloaks. Mr. Dursley couldn\'t bear people who dressed in
+funny clothes -- the getups you saw on young people! He supposed this
+was some stupid new fashion. He drummed his fingers on the steering
+wheel and his eyes fell on a huddle of these weirdos standing quite
+close by. They were whispering excitedly together. Mr. Dursley was
+enraged to see that a couple of them weren\'t young at all; why, that man
+had to be older than he was, and wearing an emerald-green cloak! The
+nerve of him! But then it struck Mr. Dursley that this was probably some
+silly stunt -- these people were obviously collecting for something...
+yes, that would be it. The traffic moved on and a few minutes later, Mr.
+Dursley arrived in the Grunnings parking lot, his mind back on drills.
+
+Mr. Dursley always sat with his back to the window in his office on the
+ninth floor. If he hadn\'t, he might have found it harder to concentrate
+on drills that morning. He didn\'t see the owls swoop ing past in broad
+daylight, though people down in the street did; they pointed and gazed
+open- mouthed as owl after owl sped overhead. Most of them had never
+seen an owl even at nighttime. Mr. Dursley, however, had a perfectly
+normal, owl-free morning. He yelled at five different people. He made
+several important telephone calls and shouted a bit more. He was in a
+very good mood until lunchtime, when he thought he\'d stretch his legs
+and walk across the road to buy himself a bun from the bakery.
+
+He\'d forgotten all about the people in cloaks until he passed a group of
+them next to the baker\'s. He eyed them angrily as he passed. He didn\'t
+know why, but they made him uneasy. This bunch were whispering
+excitedly, too, and he couldn\'t see a single collecting tin. It was on
+his way back past them, clutching a large doughnut in a bag, that he
+caught a few words of what they were saying.
+
+"The Potters, that\'s right, that\'s what I heard yes, their son, Harry"
+
+Mr. Dursley stopped dead. Fear flooded him. He looked back at the
+whisperers as if he wanted to say something to them, but thought better
+of it.
+
+He dashed back across the road, hurried up to his office, snapped at his
+secretary not to disturb him, seized his telephone, and had almost
+finished dialing his home number when he changed his mind. He put the
+receiver back down and stroked his mustache, thinking... no, he was
+being stupid. Potter wasn\'t such an unusual name. He was sure there were
+lots of people called Potter who had a son called Harry. Come to think
+of it, he wasn\'t even sure his nephew was called Harry. He\'d never even
+seen the boy. It might have been Harvey. Or Harold. There was no point
+in worrying Mrs. Dursley; she always got so upset at any mention of her
+sister. He didn\'t blame her -- if he\'d had a sister like that... but all
+the same, those people in cloaks...
+
+He found it a lot harder to concentrate on drills that afternoon and
+when he left the building at five o\'clock, he was still so worried that
+he walked straight into someone just outside the door.
+
+"Sorry," he grunted, as the tiny old man stumbled and almost fell. It
+was a few seconds before Mr. Dursley realized that the man was wearing a
+violet cloak. He didn\'t seem at all upset at being almost knocked to the
+ground. On the contrary, his face split into a wide smile and he said in
+a squeaky voice that made passersby stare, "Don\'t be sorry, my dear sir,
+for nothing could upset me today! Rejoice, for You-Know-Who has gone at
+last! Even Muggles like yourself should be celebrating, this happy,
+happy day!"
+
+And the old man hugged Mr. Dursley around the middle and walked off.
+
+Mr. Dursley stood rooted to the spot. He had been hugged by a complete
+stranger. He also thought he had been called a Muggle, whatever that
+was. He was rattled. He hurried to his car and set off for home, hoping
+he was imagining things, which he had never hoped before, because he
+didn\'t approve of imagination.
+
+As he pulled into the driveway of number four, the first thing he saw --
+and it didn\'t improve his mood -- was the tabby cat he\'d spotted that
+morning. It was now sitting on his garden wall. He was sure it was the
+same one; it had the same markings around its eyes.
+
+"Shoo!" said Mr. Dursley loudly. The cat didn\'t move. It just gave him a
+stern look. Was this normal cat behavior? Mr. Dursley wondered. Trying
+to pull himself together, he let himself into the house. He was still
+determined not to mention anything to his wife.
+
+Mrs. Dursley had had a nice, normal day. She told him over dinner all
+about Mrs. Next Door\'s problems with her daughter and how Dudley had
+learned a new word ("Won\'t!"). Mr. Dursley tried to act normally. When
+Dudley had been put to bed, he went into the living room in time to
+catch the last report on the evening news:
+
+"And finally, bird-watchers everywhere have reported that the nation\'s
+owls have been behaving very unusually today. Although owls normally
+hunt at night and are hardly ever seen in daylight, there have been
+hundreds of sightings of these birds flying in every direction since
+sunrise. Experts are unable to explain why the owls have suddenly
+changed their sleeping pattern." The newscaster allowed himself a grin.
+"Most mysterious. And now, over to Jim McGuffin with the weather. Going
+to be any more showers of owls tonight, Jim?"
+
+"Well, Ted," said the weatherman, "I don\'t know about that, but it\'s not
+only the owls that have been acting oddly today. Viewers as far apart as
+Kent, Yorkshire, and Dundee have been phoning in to tell me that instead
+of the rain I promised yesterday, they\'ve had a downpour of shooting
+stars! Perhaps people have been celebrating Bonfire Night early -- it\'s
+not until next week, folks! But I can promise a wet night tonight."
+
+Mr. Dursley sat frozen in his armchair. Shooting stars all over Britain?
+Owls flying by daylight? Mysterious people in cloaks all over the place?
+And a whisper, a whisper about the Potters...
+
+Mrs. Dursley came into the living room carrying two cups of tea. It was
+no good. He\'d have to say something to her. He cleared his throat
+nervously. "Er -- Petunia, dear -- you haven\'t heard from your sister
+lately, have you?"
+
+As he had expected, Mrs. Dursley looked shocked and angry. After all,
+they normally pretended she didn\'t have a sister.
+
+"No," she said sharply. "Why?"
+
+"Funny stuff on the news," Mr. Dursley mumbled. "Owls... shooting
+stars... and there were a lot of funny-looking people in town today..."
+
+"So?" snapped Mrs. Dursley.
+
+"Well, I just thought... maybe... it was something to do with... you
+know... her crowd."
+
+Mrs. Dursley sipped her tea through pursed lips. Mr. Dursley wondered
+whether he dared tell her he\'d heard the name "Potter." He decided he
+didn\'t dare. Instead he said, as casually as he could, "Their son --
+he\'d be about Dudley\'s age now, wouldn\'t he?"
+
+"I suppose so," said Mrs. Dursley stiffly.
+
+"What\'s his name again? Howard, isn\'t it?"
+
+"Harry. Nasty, common name, if you ask me."
+
+"Oh, yes," said Mr. Dursley, his heart sinking horribly. "Yes, I quite
+agree."
+
+He didn\'t say another word on the subject as they went upstairs to bed.
+While Mrs. Dursley was in the bathroom, Mr. Dursley crept to the bedroom
+window and peered down into the front garden. The cat was still there.
+It was staring down Privet Drive as though it were waiting for
+something.
+
+Was he imagining things? Could all this have anything to do with the
+Potters? If it did... if it got out that they were related to a pair of
+-- well, he didn\'t think he could bear it.
+
+The Dursleys got into bed. Mrs. Dursley fell asleep quickly but Mr.
+Dursley lay awake, turning it all over in his mind. His last, comforting
+thought before he fell asleep was that even if the Potters were
+involved, there was no reason for them to come near him and Mrs.
+Dursley. The Potters knew very well what he and Petunia thought about
+them and their kind.... He couldn\'t see how he and Petunia could get
+mixed up in anything that might be going on -- he yawned and turned over
+-- it couldn\'t affect them....
+
+How very wrong he was.
+
+Mr. Dursley might have been drifting into an uneasy sleep, but the cat
+on the wall outside was showing no sign of sleepiness. It was sitting as
+still as a statue, its eyes fixed unblinkingly on the far corner of
+Privet Drive. It didn\'t so much as quiver when a car door slammed on the
+next street, nor when two owls swooped overhead. In fact, it was nearly
+midnight before the cat moved at all.
+
+A man appeared on the corner the cat had been watching, appeared so
+suddenly and silently you\'d have thought he\'d just popped out of the
+ground. The cat\'s tail twitched and its eyes narrowed.
+
+Nothing like this man had ever been seen on Privet Drive. He was tall,
+thin, and very old, judging by the silver of his hair and beard, which
+were both long enough to tuck into his belt. He was wearing long robes,
+a purple cloak that swept the ground, and high-heeled, buckled boots.
+His blue eyes were light, bright, and sparkling behind half-moon
+spectacles and his nose was very long and crooked, as though it had been
+broken at least twice. This man\'s name was Albus Dumbledore.
+
+Albus Dumbledore didn\'t seem to realize that he had just arrived in a
+street where everything from his name to his boots was unwelcome. He was
+busy rummaging in his cloak, looking for something. But he did seem to
+realize he was being watched, because he looked up suddenly at the cat,
+which was still staring at him from the other end of the street. For
+some reason, the sight of the cat seemed to amuse him. He chuckled and
+muttered, "I should have known."
+
+He found what he was looking for in his inside pocket. It seemed to be a
+silver cigarette lighter. He flicked it open, held it up in the air, and
+clicked it. The nearest street lamp went out with a little pop. He
+clicked it again -- the next lamp flickered into darkness. Twelve times
+he clicked the Put-Outer, until the only lights left on the whole street
+were two tiny pinpricks in the distance, which were the eyes of the cat
+watching him. If anyone looked out of their window now, even beady-eyed
+Mrs. Dursley, they wouldn\'t be able to see anything that was happening
+down on the pavement. Dumbledore slipped the Put-Outer back inside his
+cloak and set off down the street toward number four, where he sat down
+on the wall next to the cat. He didn\'t look at it, but after a moment he
+spoke to it.
+
+"Fancy seeing you here, Professor McGonagall."
+
+He turned to smile at the tabby, but it had gone. Instead he was smiling
+at a rather severe-looking woman who was wearing square glasses exactly
+the shape of the markings the cat had had around its eyes. She, too, was
+wearing a cloak, an emerald one. Her black hair was drawn into a tight
+bun. She looked distinctly ruffled.
+
+"How did you know it was me?" she asked.
+
+"My dear Professor, I \'ve never seen a cat sit so stiffly."
+
+"You\'d be stiff if you\'d been sitting on a brick wall all day," said
+Professor McGonagall.
+
+"All day? When you could have been celebrating? I must have passed a
+dozen feasts and parties on my way here."
+
+Professor McGonagall sniffed angrily.
+
+"Oh yes, everyone\'s celebrating, all right," she said impatiently.
+"You\'d think they\'d be a bit more careful, but no -- even the Muggles
+have noticed something\'s going on. It was on their news." She jerked her
+head back at the Dursleys\' dark living-room window. "I heard it. Flocks
+of owls... shooting stars.... Well, they\'re not completely stupid. They
+were bound to notice something. Shooting stars down in Kent -- I\'ll bet
+that was Dedalus Diggle. He never had much sense."
+
+"You can\'t blame them," said Dumbledore gently. "We\'ve had precious
+little to celebrate for eleven years."
+
+"I know that," said Professor McGonagall irritably. "But that\'s no
+reason to lose our heads. People are being downright careless, out on
+the streets in broad daylight, not even dressed in Muggle clothes,
+swapping rumors."
+
+She threw a sharp, sideways glance at Dumbledore here, as though hoping
+he was going to tell her something, but he didn\'t, so she went on. "A
+fine thing it would be if, on the very day YouKnow-Who seems to have
+disappeared at last, the Muggles found out about us all. I suppose he
+really has gone, Dumbledore?"
+
+"It certainly seems so," said Dumbledore. "We have much to be thankful
+for. Would you care for a lemon drop?"
+
+"A what?"
+
+"A lemon drop. They\'re a kind of Muggle sweet I\'m rather fond of"
+
+"No, thank you," said Professor McGonagall coldly, as though she didn\'t
+think this was the moment for lemon drops. "As I say, even if
+You-Know-Who has gone -"
+
+"My dear Professor, surely a sensible person like yourself can call him
+by his name? All this \'You- Know-Who\' nonsense -- for eleven years I
+have been trying to persuade people to call him by his proper name:
+Voldemort." Professor McGonagall flinched, but Dumbledore, who was
+unsticking two lemon drops, seemed not to notice. "It all gets so
+confusing if we keep saying \'You-Know-Who.\' I have never seen any reason
+to be frightened of saying Voldemort\'s name.
+
+"I know you haven \'t, said Professor McGonagall, sounding half
+exasperated, half admiring. "But you\'re different. Everyone knows you\'re
+the only one You-Know- oh, all right, Voldemort, was frightened of."
+
+"You flatter me," said Dumbledore calmly. "Voldemort had powers I will
+never have."
+
+"Only because you\'re too -- well -- noble to use them."
+
+"It\'s lucky it\'s dark. I haven\'t blushed so much since Madam Pomfrey
+told me she liked my new earmuffs."
+
+Professor McGonagall shot a sharp look at Dumbledore and said, "The owls
+are nothing next to the rumors that are flying around. You know what
+everyone\'s saying? About why he\'s disappeared? About what finally
+stopped him?"
+
+It seemed that Professor McGonagall had reached the point she was most
+anxious to discuss, the real reason she had been waiting on a cold, hard
+wall all day, for neither as a cat nor as a woman had she fixed
+Dumbledore with such a piercing stare as she did now. It was plain that
+whatever "everyone" was saying, she was not going to believe it until
+Dumbledore told her it was true. Dumbledore, however, was choosing
+another lemon drop and did not answer.
+
+"What they\'re saying," she pressed on, "is that last night Voldemort
+turned up in Godric\'s Hollow. He went to find the Potters. The rumor is
+that Lily and James Potter are -- are -- that they\'re -- dead. "
+
+Dumbledore bowed his head. Professor McGonagall gasped.
+
+"Lily and James... I can\'t believe it... I didn\'t want to believe it...
+Oh, Albus..."
+
+Dumbledore reached out and patted her on the shoulder. "I know... I
+know..." he said heavily.
+
+Professor McGonagall\'s voice trembled as she went on. "That\'s not all.
+They\'re saying he tried to kill the Potter\'s son, Harry. But -- he
+couldn\'t. He couldn\'t kill that little boy. No one knows why, or how,
+but they\'re saying that when he couldn\'t kill Harry Potter, Voldemort\'s
+power somehow broke -- and that\'s why he\'s gone.
+
+Dumbledore nodded glumly.
+
+"It\'s -- it\'s true?" faltered Professor McGonagall. "After all he\'s
+done... all the people he\'s killed... he couldn\'t kill a little boy?
+It\'s just astounding... of all the things to stop him... but how in the
+name of heaven did Harry survive?"
+
+"We can only guess," said Dumbledore. "We may never know."
+
+Professor McGonagall pulled out a lace handkerchief and dabbed at her
+eyes beneath her spectacles. Dumbledore gave a great sniff as he took a
+golden watch from his pocket and examined it. It was a very odd watch.
+It had twelve hands but no numbers; instead, little planets were moving
+around the edge. It must have made sense to Dumbledore, though, because
+he put it back in his pocket and said, "Hagrid\'s late. I suppose it was
+he who told you I\'d be here, by the way?"
+
+"Yes," said Professor McGonagall. "And I don\'t suppose you\'re going to
+tell me why you\'re here, of all places?"
+
+"I\'ve come to bring Harry to his aunt and uncle. They\'re the only family
+he has left now."
+
+"You don\'t mean -- you can\'t mean the people who live here?" cried
+Professor McGonagall, jumping to her feet and pointing at number four.
+"Dumbledore -- you can\'t. I\'ve been watching them all day. You couldn\'t
+find two people who are less like us. And they\'ve got this son -- I saw
+him kicking his mother all the way up the street, screaming for sweets.
+Harry Potter come and live here!"
+
+"It\'s the best place for him," said Dumbledore firmly. "His aunt and
+uncle will be able to explain everything to him when he\'s older. I\'ve
+written them a letter."
+
+"A letter?" repeated Professor McGonagall faintly, sitting back down on
+the wall. "Really, Dumbledore, you think you can explain all this in a
+letter? These people will never understand him! He\'ll be famous -- a
+legend -- I wouldn\'t be surprised if today was known as Harry Potter day
+in the future -- there will be books written about Harry -- every child
+in our world will know his name!"
+
+"Exactly," said Dumbledore, looking very seriously over the top of his
+half-moon glasses. "It would be enough to turn any boy\'s head. Famous
+before he can walk and talk! Famous for something he won\'t even
+remember! CarA you see how much better off he\'ll be, growing up away
+from all that until he\'s ready to take it?"
+
+Professor McGonagall opened her mouth, changed her mind, swallowed, and
+then said, "Yes -- yes, you\'re right, of course. But how is the boy
+getting here, Dumbledore?" She eyed his cloak suddenly as though she
+thought he might be hiding Harry underneath it.
+
+"Hagrid\'s bringing him."
+
+"You think it -- wise -- to trust Hagrid with something as important as
+this?"
+
+I would trust Hagrid with my life," said Dumbledore.
+
+"I\'m not saying his heart isn\'t in the right place," said Professor
+McGonagall grudgingly, "but you can\'t pretend he\'s not careless. He does
+tend to -- what was that?"
+
+A low rumbling sound had broken the silence around them. It grew
+steadily louder as they looked up and down the street for some sign of a
+headlight; it swelled to a roar as they both looked up at the sky -- and
+a huge motorcycle fell out of the air and landed on the road in front of
+them.
+
+If the motorcycle was huge, it was nothing to the man sitting astride
+it. He was almost twice as tall as a normal man and at least five times
+as wide. He looked simply too big to be allowed, and so wild - long
+tangles of bushy black hair and beard hid most of his face, he had hands
+the size of trash can lids, and his feet in their leather boots were
+like baby dolphins. In his vast, muscular arms he was holding a bundle
+of blankets.
+
+"Hagrid," said Dumbledore, sounding relieved. "At last. And where did
+you get that motorcycle?"
+
+"Borrowed it, Professor Dumbledore, sit," said the giant, climbing
+carefully off the motorcycle as he spoke. "Young Sirius Black lent it to
+me. I\'ve got him, sir."
+
+"No problems, were there?"
+
+"No, sir -- house was almost destroyed, but I got him out all right
+before the Muggles started swarmin\' around. He fell asleep as we was
+flyin\' over Bristol."
+
+Dumbledore and Professor McGonagall bent forward over the bundle of
+blankets. Inside, just visible, was a baby boy, fast asleep. Under a
+tuft of jet-black hair over his forehead they could see a curiously
+shaped cut, like a bolt of lightning.
+
+"Is that where -?" whispered Professor McGonagall.
+
+"Yes," said Dumbledore. "He\'ll have that scar forever."
+
+"Couldn\'t you do something about it, Dumbledore?"
+
+"Even if I could, I wouldn\'t. Scars can come in handy. I have one myself
+above my left knee that is a perfect map of the London Underground. Well
+-- give him here, Hagrid -- we\'d better get this over with."
+
+Dumbledore took Harry in his arms and turned toward the Dursleys\' house.
+
+"Could I -- could I say good-bye to him, sir?" asked Hagrid. He bent his
+great, shaggy head over Harry and gave him what must have been a very
+scratchy, whiskery kiss. Then, suddenly, Hagrid let out a howl like a
+wounded dog.
+
+"Shhh!" hissed Professor McGonagall, "you\'ll wake the Muggles!"
+
+"S-s-sorry," sobbed Hagrid, taking out a large, spotted handkerchief and
+burying his face in it. "But I c-c-can\'t stand it -- Lily an\' James dead
+-- an\' poor little Harry off ter live with Muggles -"
+
+"Yes, yes, it\'s all very sad, but get a grip on yourself, Hagrid, or
+we\'ll be found," Professor McGonagall whispered, patting Hagrid gingerly
+on the arm as Dumbledore stepped over the low garden wall and walked to
+the front door. He laid Harry gently on the doorstep, took a letter out
+of his cloak, tucked it inside Harry\'s blankets, and then came back to
+the other two. For a full minute the three of them stood and looked at
+the little bundle; Hagrid\'s shoulders shook, Professor McGonagall
+blinked furiously, and the twinkling light that usually shone from
+Dumbledore\'s eyes seemed to have gone out.
+
+"Well," said Dumbledore finally, "that\'s that. We\'ve no business staying
+here. We may as well go and join the celebrations."
+
+"Yeah," said Hagrid in a very muffled voice, "I\'ll be takin\' Sirius his
+bike back. G\'night, Professor McGonagall -- Professor Dumbledore, sir."
+
+Wiping his streaming eyes on his jacket sleeve, Hagrid swung himself
+onto the motorcycle and kicked the engine into life; with a roar it rose
+into the air and off into the night.
+
+"I shall see you soon, I expect, Professor McGonagall," said Dumbledore,
+nodding to her. Professor McGonagall blew her nose in reply.
+
+Dumbledore turned and walked back down the street. On the corner he
+stopped and took out the silver Put-Outer. He clicked it once, and
+twelve balls of light sped back to their street lamps so that Privet
+Drive glowed suddenly orange and he could make out a tabby cat slinking
+around the corner at the other end of the street. He could just see the
+bundle of blankets on the step of number four.
+
+"Good luck, Harry," he murmured. He turned on his heel and with a swish
+of his cloak, he was gone.
+
+A breeze ruffled the neat hedges of Privet Drive, which lay silent and
+tidy under the inky sky, the very last place you would expect
+astonishing things to happen. Harry Potter rolled over inside his
+blankets without waking up. One small hand closed on the letter beside
+him and he slept on, not knowing he was special, not knowing he was
+famous, not knowing he would be woken in a few hours\' time by Mrs.
+Dursley\'s scream as she opened the front door to put out the milk
+bottles, nor that he would spend the next few weeks being prodded and
+pinched by his cousin Dudley... He couldn\'t know that at this very
+moment, people meeting in secret all over the country were holding up
+their glasses and saying in hushed voices: "To Harry Potter -- the boy
+who lived!"
+
+"S-s-sorry," sobbed Hagrid, taking out a large, spotted handkerchief and
+burying his face in it. "But I c-c-can\'t stand it -- Lily an\' James dead
+-- an\' poor little Harry off ter live with Muggles -"
+
+"Yes, yes, it\'s all very sad, but get a grip on yourself, Hagrid, or
+we\'ll be found," Professor McGonagall whispered, patting Hagrid gingerly
+on the arm as Dumbledore stepped over the low garden wall and walked to
+the front door. He laid Harry gently on the doorstep, took a letter out
+of his cloak, tucked it inside Harry\'s blankets, and then came back to
+the other two. For a full minute the three of them stood and looked at
+the little bundle; Hagrid\'s shoulders shook, Professor McGonagall
+blinked furiously, and the twinkling light that usually shone from
+Dumbledore\'s eyes seemed to have gone out.
+
+"Well," said Dumbledore finally, "that\'s that. We\'ve no business staying
+here. We may as well go and join the celebrations."
+
+"Yeah," said Hagrid in a very muffled voice, "I\'ll be takin\' Sirius his
+bike back. G\'night, Professor McGonagall -- Professor Dumbledore, sir."
+
+Wiping his streaming eyes on his jacket sleeve, Hagrid swung himself
+onto the motorcycle and kicked the engine into life; with a roar it rose
+into the air and off into the night.
+
+"I shall see you soon, I expect, Professor McGonagall," said Dumbledore,
+nodding to her. Professor McGonagall blew her nose in reply.
+
+Dumbledore turned and walked back down the street. On the corner he
+stopped and took out the silver Put-Outer. He clicked it once, and
+twelve balls of light sped back to their street lamps so that Privet
+Drive glowed suddenly orange and he could make out a tabby cat slinking
+around the corner at the other end of the street. He could just see the
+bundle of blankets on the step of number four.
+
+"Good luck, Harry," he murmured. He turned on his heel and with a swish
+of his cloak, he was gone.
+
+
+
+CHAPTER TWO
+
+THE VANISHING GLASS
+
+Nearly ten years had passed since the Dursleys had woken up to find
+their nephew on the front step, but Privet Drive had hardly changed at
+all. The sun rose on the same tidy front gardens and lit up the brass
+number four on the Dursleys\' front door; it crept into their living
+room, which was almost exactly the same as it had been on the night when
+Mr. Dursley had seen that fateful news report about the owls. Only the
+photographs on the mantelpiece really showed how much time had passed.
+Ten years ago, there had been lots of pictures of what looked like a
+large pink beach ball wearing different-colored bonnets -- but Dudley
+Dursley was no longer a baby, and now the photographs showed a large
+blond boy riding his first bicycle, on a carousel at the fair, playing a
+computer game with his father, being hugged and kissed by his mother.
+The room held no sign at all that another boy lived in the house, too.
+
+Yet Harry Potter was still there, asleep at the moment, but not for
+long. His Aunt Petunia was awake and it was her shrill voice that made
+the first noise of the day.
+
+"Up! Get up! Now!"
+
+Harry woke with a start. His aunt rapped on the door again.
+
+"Up!" she screeched. Harry heard her walking toward the kitchen and then
+the sound of the frying pan being put on the stove. He rolled onto his
+back and tried to remember the dream he had been having. It had been a
+good one. There had been a flying motorcycle in it. He had a funny
+feeling he\'d had the same dream before.
+
+His aunt was back outside the door.
+
+"Are you up yet?" she demanded.
+
+"Nearly," said Harry.
+
+"Well, get a move on, I want you to look after the bacon. And don\'t you
+dare let it burn, I want everything perfect on Duddy\'s birthday."
+
+Harry groaned.
+
+"What did you say?" his aunt snapped through the door.
+
+"Nothing, nothing..."
+
+Dudley\'s birthday -- how could he have forgotten? Harry got slowly out
+of bed and started looking for socks. He found a pair under his bed and,
+after pulling a spider off one of them, put them on. Harry was used to
+spiders, because the cupboard under the stairs was full of them, and
+that was where he slept.
+
+When he was dressed he went down the hall into the kitchen. The table
+was almost hidden beneath all Dudley\'s birthday presents. It looked as
+though Dudley had gotten the new computer he wanted, not to mention the
+second television and the racing bike. Exactly why Dudley wanted a
+racing bike was a mystery to Harry, as Dudley was very fat and hated
+exercise -- unless of course it involved punching somebody. Dudley\'s
+favorite punching bag was Harry, but he couldn\'t often catch him. Harry
+didn\'t look it, but he was very fast.
+
+Perhaps it had something to do with living in a dark cupboard, but Harry
+had always been small and skinny for his age. He looked even smaller and
+skinnier than he really was because all he had to wear were old clothes
+of Dudley\'s, and Dudley was about four times bigger than he was. Harry
+had a thin face, knobbly knees, black hair, and bright green eyes. He
+wore round glasses held together with a lot of Scotch tape because of
+all the times Dudley had punched him on the nose. The only thing Harry
+liked about his own appearance was a very thin scar on his forehead that
+was shaped like a bolt of lightning. He had had it as long as he could
+remember, and the first question he could ever remember asking his Aunt
+Petunia was how he had gotten it.
+
+"In the car crash when your parents died," she had said. "And don\'t ask
+questions."
+
+Don\'t ask questions -- that was the first rule for a quiet life with the
+Dursleys.
+
+Uncle Vernon entered the kitchen as Harry was turning over the bacon.
+
+"Comb your hair!" he barked, by way of a morning greeting.
+
+About once a week, Uncle Vernon looked over the top of his newspaper and
+shouted that Harry needed a haircut. Harry must have had more haircuts
+than the rest of the boys in his class put
+
+together, but it made no difference, his hair simply grew that way --
+all over the place.
+
+Harry was frying eggs by the time Dudley arrived in the kitchen with his
+mother. Dudley looked a lot like Uncle Vernon. He had a large pink face,
+not much neck, small, watery blue eyes, and thick blond hair that lay
+smoothly on his thick, fat head. Aunt Petunia often said that Dudley
+looked like a baby angel -- Harry often said that Dudley looked like a
+pig in a wig.
+
+Harry put the plates of egg and bacon on the table, which was difficult
+as there wasn\'t much room. Dudley, meanwhile, was counting his presents.
+His face fell.
+
+"Thirty-six," he said, looking up at his mother and father. "That\'s two
+less than last year."
+
+"Darling, you haven\'t counted Auntie Marge\'s present, see, it\'s here
+under this big one from Mommy and Daddy."
+
+"All right, thirty-seven then," said Dudley, going red in the face.
+Harry, who could see a huge Dudley tantrum coming on, began wolfing down
+his bacon as fast as possible in case Dudley turned the table over.
+
+Aunt Petunia obviously scented danger, too, because she said quickly,
+"And we\'ll buy you another two presents while we\'re out today. How\'s
+that, popkin? Two more presents. Is that all right\'\'
+
+Dudley thought for a moment. It looked like hard work. Finally he said
+slowly, "So I\'ll have thirty ... thirty..."
+
+"Thirty-nine, sweetums," said Aunt Petunia.
+
+"Oh." Dudley sat down heavily and grabbed the nearest parcel. "All right
+then."
+
+Uncle Vernon chuckled. "Little tyke wants his money\'s worth, just like
+his father. \'Atta boy, Dudley!" He ruffled Dudley\'s hair.
+
+At that moment the telephone rang and Aunt Petunia went to answer it
+while Harry and Uncle Vernon watched Dudley unwrap the racing bike, a
+video camera, a remote control airplane, sixteen new computer games, and
+a VCR. He was ripping the paper off a gold wristwatch when Aunt Petunia
+came back from the telephone looking both angry and worried.
+
+"Bad news, Vernon," she said. "Mrs. Figg\'s broken her leg. She can\'t
+take him." She jerked her head in Harry\'s direction.
+
+Dudley\'s mouth fell open in horror, but Harry\'s heart gave a leap. Every
+year on Dudley\'s birthday, his parents took him and a friend out for the
+day, to adventure parks, hamburger restaurants, or the movies. Every
+year, Harry was left behind with Mrs. Figg, a mad old lady who lived two
+streets away. Harry hated it there. The whole house smelled of cabbage
+and Mrs. Figg made him look at photographs of all the cats she\'d ever
+owned.
+
+"Now what?" said Aunt Petunia, looking furiously at Harry as though he\'d
+planned this. Harry knew he ought to feel sorry that Mrs. Figg had
+broken her leg, but it wasn\'t easy when he reminded himself it would be
+a whole year before he had to look at Tibbles, Snowy, Mr. Paws, and
+Tufty again.
+
+"We could phone Marge," Uncle Vernon suggested.
+
+"Don\'t be silly, Vernon, she hates the boy."
+
+The Dursleys often spoke about Harry like this, as though he wasn\'t
+there -- or rather, as though he was something very nasty that couldn\'t
+understand them, like a slug.
+
+"What about what\'s-her-name, your friend -- Yvonne?"
+
+"On vacation in Majorca," snapped Aunt Petunia.
+
+"You could just leave me here," Harry put in hopefully (he\'d be able to
+watch what he wanted on television for a change and maybe even have a go
+on Dudley\'s computer).
+
+Aunt Petunia looked as though she\'d just swallowed a lemon.
+
+"And come back and find the house in ruins?" she snarled.
+
+"I won\'t blow up the house," said Harry, but they weren\'t listening.
+
+"I suppose we could take him to the zoo," said Aunt Petunia slowly, "...
+and leave him in the car...."
+
+"That car\'s new, he\'s not sitting in it alone...."
+
+Dudley began to cry loudly. In fact, he wasn\'t really crying -- it had
+been years since he\'d really cried -- but he knew that if he screwed up
+his face and wailed, his mother would give him anything he wanted.
+
+"Dinky Duddydums, don\'t cry, Mummy won\'t let him spoil your special
+day!" she cried, flinging her arms around him.
+
+"I... don\'t... want... him... t-t-to come!" Dudley yelled between huge,
+pretend sobs. "He always sp- spoils everything!" He shot Harry a nasty
+grin through the gap in his mother\'s arms.
+
+Just then, the doorbell rang -- "Oh, good Lord, they\'re here!" said Aunt
+Petunia frantically -- and a moment later, Dudley\'s best friend, Piers
+Polkiss, walked in with his mother. Piers was a scrawny boy with a face
+like a rat. He was usually the one who held people\'s arms behind their
+backs while Dudley hit them. Dudley stopped pretending to cry at once.
+
+Half an hour later, Harry, who couldn\'t believe his luck, was sitting in
+the back of the Dursleys\' car with Piers and Dudley, on the way to the
+zoo for the first time in his life. His aunt and uncle hadn\'t been able
+to think of anything else to do with him, but before they\'d left, Uncle
+Vernon had taken Harry aside.
+
+"I\'m warning you," he had said, putting his large purple face right up
+close to Harry\'s, "I\'m warning you now, boy -- any funny business,
+anything at all -- and you\'ll be in that cupboard from now until
+Christmas."
+
+"I\'m not going to do anything," said Harry, "honestly..
+
+But Uncle Vernon didn\'t believe him. No one ever did.
+
+The problem was, strange things often happened around Harry and it was
+just no good telling the Dursleys he didn\'t make them happen.
+
+Once, Aunt Petunia, tired of Harry coming back from the barbers looking
+as though he hadn\'t been at all, had taken a pair of kitchen scissors
+and cut his hair so short he was almost bald except for his bangs, which
+she left "to hide that horrible scar." Dudley had laughed himself silly
+at Harry, who spent a sleepless night imagining school the next day,
+where he was already laughed at for his baggy clothes and taped glasses.
+Next morning, however, he had gotten up to find his hair exactly as it
+had been before Aunt Petunia had sheared it off He had been given a week
+in his cupboard for this, even though he had tried to explain that he
+couldn\'t explain how it had grown back so quickly.
+
+Another time, Aunt Petunia had been trying to force him into a revolting
+old sweater of Dudley\'s (brown with orange puff balls) -- The harder she
+tried to pull it over his head, the smaller it seemed to become, until
+finally it might have fitted a hand puppet, but certainly wouldn\'t fit
+Harry. Aunt Petunia had decided it must have shrunk in the wash and, to
+his great relief, Harry wasn\'t punished.
+
+On the other hand, he\'d gotten into terrible trouble for being found on
+the roof of the school kitchens. Dudley\'s gang had been chasing him as
+usual when, as much to Harry\'s surprise as anyone else\'s, there he was
+sitting on the chimney. The Dursleys had received a very angry letter
+from Harry\'s headmistress telling them Harry had been climbing school
+buildings. But all he\'d tried to do (as he shouted at Uncle Vernon
+through the locked door of his cupboard) was jump behind the big trash
+cans outside the kitchen doors. Harry supposed that the wind must have
+caught him in mid- jump.
+
+But today, nothing was going to go wrong. It was even worth being with
+Dudley and Piers to be spending the day somewhere that wasn\'t school,
+his cupboard, or Mrs. Figg\'s cabbage-smelling living room.
+
+While he drove, Uncle Vernon complained to Aunt Petunia. He liked to
+complain about things: people at work, Harry, the council, Harry, the
+bank, and Harry were just a few of his favorite subjects. This morning,
+it was motorcycles.
+
+"... roaring along like maniacs, the young hoodlums," he said, as a
+motorcycle overtook them.
+
+I had a dream about a motorcycle," said Harry, remembering suddenly. "It
+was flying."
+
+Uncle Vernon nearly crashed into the car in front. He turned right
+around in his seat and yelled at Harry, his face like a gigantic beet
+with a mustache: "MOTORCYCLES DON\'T FLY!"
+
+Dudley and Piers sniggered.
+
+I know they don\'t," said Harry. "It was only a dream."
+
+But he wished he hadn\'t said anything. If there was one thing the
+Dursleys hated even more than his asking questions, it was his talking
+about anything acting in a way it shouldn\'t, no matter if it was in a
+dream or even a cartoon -- they seemed to think he might get dangerous
+ideas.
+
+It was a very sunny Saturday and the zoo was crowded with families. The
+Dursleys bought Dudley and Piers large chocolate ice creams at the
+entrance and then, because the smiling lady in the van had asked Harry
+what he wanted before they could hurry him away, they bought him a cheap
+lemon ice pop. It wasn\'t bad, either, Harry thought, licking it as they
+watched a gorilla scratching its head who looked remarkably like Dudley,
+except that it wasn\'t blond.
+
+Harry had the best morning he\'d had in a long time. He was careful to
+walk a little way apart from the Dursleys so that Dudley and Piers, who
+were starting to get bored with the animals by lunchtime, wouldn\'t fall
+back on their favorite hobby of hitting him. They ate in the zoo
+restaurant, and when Dudley had a tantrum because his knickerbocker
+glory didn\'t have enough ice cream on top, Uncle Vernon bought him
+another one and Harry was allowed to finish the first.
+
+Harry felt, afterward, that he should have known it was all too good to
+last.
+
+After lunch they went to the reptile house. It was cool and dark in
+there, with lit windows all along the walls. Behind the glass, all sorts
+of lizards and snakes were crawling and slithering over bits of wood and
+stone. Dudley and Piers wanted to see huge, poisonous cobras and thick,
+man-crushing pythons. Dudley quickly found the largest snake in the
+place. It could have wrapped its body twice around Uncle Vernon\'s car
+and crushed it into a trash can -- but at the moment it didn\'t look in
+the mood. In fact, it was fast asleep.
+
+Dudley stood with his nose pressed against the glass, staring at the
+glistening brown coils.
+
+"Make it move," he whined at his father. Uncle Vernon tapped on the
+glass, but the snake didn\'t budge.
+
+"Do it again," Dudley ordered. Uncle Vernon rapped the glass smartly
+with his knuckles, but the snake just snoozed on.
+
+"This is boring," Dudley moaned. He shuffled away.
+
+Harry moved in front of the tank and looked intently at the snake. He
+wouldn\'t have been surprised if it had died of boredom itself -- no
+company except stupid people drumming their fingers on the glass trying
+to disturb it all day long. It was worse than having a cupboard as a
+bedroom, where the only visitor was Aunt Petunia hammering on the door
+to wake you up; at least he got to visit the rest of the house.
+
+The snake suddenly opened its beady eyes. Slowly, very slowly, it raised
+its head until its eyes were on a level with Harry\'s.
+
+It winked.
+
+Harry stared. Then he looked quickly around to see if anyone was
+watching. They weren\'t. He looked back at the snake and winked, too.
+
+The snake jerked its head toward Uncle Vernon and Dudley, then raised
+its eyes to the ceiling. It gave Harry a look that said quite plainly:
+
+"I get that all the time.
+
+"I know," Harry murmured through the glass, though he wasn\'t sure the
+snake could hear him. "It must be really annoying."
+
+The snake nodded vigorously.
+
+"Where do you come from, anyway?" Harry asked.
+
+The snake jabbed its tail at a little sign next to the glass. Harry
+peered at it.
+
+Boa Constrictor, Brazil.
+
+"Was it nice there?"
+
+The boa constrictor jabbed its tail at the sign again and Harry read on:
+This specimen was bred in the zoo. "Oh, I see -- so you\'ve never been to
+Brazil?"
+
+As the snake shook its head, a deafening shout behind Harry made both of
+them jump.
+
+"DUDLEY! MR. DURSLEY! COME AND LOOK AT THIS SNAKE! YOU WON\'T BELIEVE
+WHAT IT\'S DOING!"
+
+Dudley came waddling toward them as fast as he could.
+
+"Out of the way, you," he said, punching Harry in the ribs. Caught by
+surprise, Harry fell hard on the concrete floor. What came next happened
+so fast no one saw how it happened -- one second, Piers and Dudley were
+leaning right up close to the glass, the next, they had leapt back with
+howls of horror.
+
+Harry sat up and gasped; the glass front of the boa constrictor\'s tank
+had vanished. The great snake was uncoiling itself rapidly, slithering
+out onto the floor. People throughout the reptile house screamed and
+started running for the exits.
+
+As the snake slid swiftly past him, Harry could have sworn a low,
+hissing voice said, "Brazil, here I come.... Thanksss, amigo."
+
+The keeper of the reptile house was in shock.
+
+"But the glass," he kept saying, "where did the glass go?"
+
+The zoo director himself made Aunt Petunia a cup of strong, sweet tea
+while he apologized over and over again. Piers and Dudley could only
+gibber. As far as Harry had seen, the snake hadn\'t done anything except
+snap playfully at their heels as it passed, but by the time they were
+all back in Uncle Vernon\'s car, Dudley was telling them how it had
+nearly bitten off his leg, while Piers was swearing it had tried to
+squeeze him to death. But worst of all, for Harry at least, was Piers
+calming down enough to say, "Harry was talking to it, weren\'t you,
+Harry?"
+
+Uncle Vernon waited until Piers was safely out of the house before
+starting on Harry. He was so angry he could hardly speak. He managed to
+say, "Go -- cupboard -- stay -- no meals," before he collapsed into a
+chair, and Aunt Petunia had to run and get him a large brandy.
+
+Harry lay in his dark cupboard much later, wishing he had a watch. He
+didn\'t know what time it was and he couldn\'t be sure the Dursleys were
+asleep yet. Until they were, he couldn\'t risk sneaking to the kitchen
+for some food.
+
+He\'d lived with the Dursleys almost ten years, ten miserable years, as
+long as he could remember, ever since he\'d been a baby and his parents
+had died in that car crash. He couldn\'t remember being in the car when
+his parents had died. Sometimes, when he strained his memory during long
+hours in his cupboard, he came up with a strange vision: a blinding
+flash of green light and a burn- ing pain on his forehead. This, he
+supposed, was the crash, though he couldn\'t imagine where all the green
+light came from. He couldn\'t remember his parents at all. His aunt and
+uncle never spoke about them, and of course he was forbidden to ask
+questions. There were no photographs of them in the house.
+
+When he had been younger, Harry had dreamed and dreamed of some unknown
 relation coming to take him away, but it had never happened; the
 Dursleys were his only family. Yet sometimes he thought (or maybe hoped)
 that strangers in the street seemed to know him. Very strange strangers

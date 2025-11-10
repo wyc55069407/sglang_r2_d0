@@ -366,7 +366,7 @@ class Indexer(CustomOp):
 
             self.k_cache[ii:ii+1, start_pos:end_pos] = key[q_len_start:q_len_end]
 
-            print("layer", layer_id, " batch", ii, " dsa: update k at: ", start_pos, "~", end_pos)
+            # print("layer", layer_id, " batch", ii, " dsa: update k at: ", start_pos, "~", end_pos)
 
             q_len_start = q_len_end
 

@@ -1767,6 +1767,7 @@ class DeepseekV2AttentionMLA(nn.Module):
             # memGB = torch.xpu.memory_allocated(device=hidden_states.device) / 1024 / 1024 / 1024
             # print("mem allocated: ", memGB, "GB")
             forward_batch.topk_indices = topk_indices
+            # breakpoint()
 
         #set_kv_buffer + sdpa  -> submit in triton_backend.py
         if forward_batch.forward_mode.is_decode():
@@ -1781,6 +1782,34 @@ class DeepseekV2AttentionMLA(nn.Module):
             else:
                 kv_indptr = backend.forward_metadata.kv_indptr
                 kv_indices = backend.forward_metadata.kv_indices
+            
+            if hasattr(forward_batch, "topk_indices") and forward_batch.topk_indices is not None:
+                start_offset = 0
+                kv_indptr_updated = kv_indptr.clone()
+                for i in range(forward_batch.batch_size):
+                    
+                    kvlen = kv_indptr[i+1] - kv_indptr[i]
+                    if kvlen > 2048:
+                        kvlen_new = 2048  # update kv_indptr
+                        
+                        start_offset += kvlen_new
+                    else:
+                        start_offset += kvlen
+
+                    kv_indptr_updated[i+1] = start_offset
+                
+                kv_indices_new = torch.zeros(start_offset, device=kv_indices.device, dtype=kv_indices.dtype)
+                for i in range(forward_batch.batch_size):
+                    kvlen = kv_indptr_updated[i+1] - kv_indptr_updated[i]
+                    if kvlen >= 2048:
+                        kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]][forward_batch.topk_indices[i]]
+                    else:
+                        kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]][forward_batch.topk_indices[i, :kvlen]]
+
+                kv_indptr = kv_indptr_updated
+                kv_indices = kv_indices_new
+                # print("kv_indices updated: ", kv_indices, kv_indices.shape)
+                # breakpoint()
                                    
             B = kv_indptr.shape[0] - 1
 
@@ -2682,7 +2711,7 @@ class DeepseekV2Model(nn.Module):
     ) -> None:
         # YC WA
         if enable_6_layer_dbg:
-            config.num_hidden_layers = 6
+            config.num_hidden_layers = 3
         super().__init__()
         self.padding_id = config.pad_token_id
         self.vocab_size = config.vocab_size
