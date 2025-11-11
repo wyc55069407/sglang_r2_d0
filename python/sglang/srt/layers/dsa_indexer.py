@@ -16,6 +16,8 @@ from sglang.srt.layers.rotary_embedding import get_rope_wrapper
 from sglang.srt.model_executor.forward_batch_info import ForwardBatch
 from sglang.srt.managers.schedule_batch import global_server_args_dict
 
+from sgl_kernel_esimd import esimd_kernel_uni
+
 # COPIED FROM DeepGEMM
 def ceil_div(x: int, y: int) -> int:
     return (x + y - 1) // y
@@ -91,7 +93,15 @@ class V32LayerNorm(nn.Module):
             x.float(), (self.dim,), self.weight, self.bias, self.eps
         ).type_as(x)
 
-
+global topk_indices_final
+topk_indices_final = None
+global index_score_rsv
+index_score_rsv = None
+real_total_count_reserved = 160*1024
+global out_idx
+out_idx = None
+global out_ordered
+out_ordered = None
 class Indexer(CustomOp):
     def __init__(
         self,
@@ -199,6 +209,21 @@ class Indexer(CustomOp):
         # weights = weights.unsqueeze(-1) * q_scale * self.softmax_scale
         weights = weights.unsqueeze(-1) * self.softmax_scale
         return weights
+    
+    def oneline_quant(self, input: torch.Tensor, group_size: int):
+        if input.device.type != "meta":
+            grouped_input = input.reshape(-1, group_size)
+            max_vals, max_indices = grouped_input.abs().max(-1)
+
+            grouped_max = grouped_input[torch.arange(max_indices.numel(), device=input.device), max_indices]
+            scales = grouped_max / 127
+            iscales = torch.nan_to_num(1 / scales).unsqueeze(-1)
+            scales = scales.half().reshape((input.size(0), -1))
+
+            qinput = torch.clamp(torch.round(grouped_input * iscales), -128, 127)
+            qinput = qinput.to(torch.int8).reshape(input.shape)
+
+        return qinput, scales
 
     def _get_q_k_bf16(
         self,
@@ -206,7 +231,6 @@ class Indexer(CustomOp):
         x: torch.Tensor,
         positions: torch.Tensor,
     ):
-
         query, _ = self.wq_b(q_lora)
         query = rearrange(query, "l (h d) -> l h d", d=self.head_dim)
 
@@ -230,6 +254,18 @@ class Indexer(CustomOp):
 
         # query = rotate_activation(query)
         # key = rotate_activation(key)
+        query_q, query_scale = self.oneline_quant(query, self.head_dim)
+        key_q, key_scale = self.oneline_quant(key, self.head_dim)
+
+        # breakpoint()
+
+        # deq_query = query_q * query_scale.unsqueeze(-1)
+        # deq_key = key_q * key_scale.unsqueeze(-1)
+
+        # query = deq_query
+        # key = deq_key
+        
+        # breakpoint()
 
         return query, key
 
@@ -245,9 +281,18 @@ class Indexer(CustomOp):
         assert len(weights.shape) == 3
         weights = weights.squeeze(-1)
 
-        topk_indices_list = []
+        # topk_indices_list = []
+        global topk_indices_final
+        if topk_indices_final is None:
+            # assume max batch is 8
+            topk_indices_final = torch.zeros(8, topk, device=query.device, dtype=torch.uint32)
+        
+        global index_score_rsv
+        if index_score_rsv is None:
+            index_score_rsv = torch.zeros(8, real_total_count_reserved, device=query.device, dtype=torch.float16) - 65504
 
         q_len_start = 0
+        max_q_len = 0
 
         for i in range(forward_batch.batch_size):
             seq_len = forward_batch.seq_lens[i].item()
@@ -291,26 +336,75 @@ class Indexer(CustomOp):
             """
             qp_shape = query_partial.shape
             query_partial = query_partial.reshape(qp_shape[0], qp_shape[1]*qp_shape[2], qp_shape[3])
+            # breakpoint()
             logits = torch.matmul(query_partial, key.transpose(1, 2))
             logits = logits.reshape(qp_shape[0], qp_shape[1], self.n_heads, logits.shape[-1])
 
-            index_score = (torch.relu(logits) * weights_partial.unsqueeze(-1)).sum(dim=-2)
-
-            end_pos = seq_len
-            topk_indices = index_score.topk(min(topk, end_pos), dim=-1)[1].squeeze(0)
-
-            pad_len = align(topk_indices.shape[-1], 2048) - topk_indices.shape[-1]
-            topk_indices = torch.nn.functional.pad(
-                topk_indices, (0, pad_len), "constant", -1
-            )
-
-            topk_indices_list.append(topk_indices)
-
+            index_score_rsv[i, :seq_len] = (torch.relu(logits) * weights_partial.unsqueeze(-1)).sum(dim=-2)
+            
+            # index_score = (torch.relu(logits) * weights_partial.unsqueeze(-1)).sum(dim=-2)
+            if seq_len > max_q_len:
+                max_q_len = seq_len
+            
             q_len_start = q_len_end
+        
+        topk_fuse_opt = True
+        if topk_fuse_opt:
+            real_total_count = max_q_len
+            groups = 1
+            if real_total_count > 20480:
+                groups = 4
+            if real_total_count > 30720:
+                groups = 6
+            if real_total_count > 40960:
+                groups = 8
+            if real_total_count > 51200:
+                groups = 10
+            total_count_stride = ((real_total_count // groups) + 4095) // 4096 * 4096
+            # real_total_count_stride_aligned = groups * total_count_stride
+            
+            global out_idx
+            global out_ordered
+            if out_idx is None:
+                out_ordered = torch.zeros(8, 10, topk, device=query.device, dtype=query.dtype)
+                out_idx = torch.zeros(8, 10, topk, device=query.device, dtype=torch.uint32)
 
-        topk_indices = torch.cat(topk_indices_list, dim=0)
+            output_final_out = 0
+            esimd_kernel_uni(
+                index_score_rsv,
+                index_score_rsv,
+                out_ordered,
+                out_idx, 
+                out_ordered, 
+                topk_indices_final, out_ordered, out_ordered, out_ordered, out_ordered,
+                3311,
+                total_count_stride,
+                groups,
+                topk, 
+                output_final_out, 
+                forward_batch.batch_size, 0, 0, 0, 0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            )
+        else:
+            for i in range(forward_batch.batch_size):
+                seq_len = forward_batch.seq_lens[i].item()
+                end_pos = seq_len
 
-        return topk_indices
+                index_score = index_score_rsv[i, :seq_len]
+                
+                topk_indices = index_score.topk(min(topk, end_pos), dim=-1)[1].squeeze(0)
+
+                pad_len = align(topk_indices.shape[-1], 2048) - topk_indices.shape[-1]
+                topk_indices = torch.nn.functional.pad(
+                    topk_indices, (0, pad_len), "constant", -1
+                )
+
+                topk_indices_final[i] = topk_indices
+                # topk_indices_list.append(topk_indices)
+
+        # topk_indices = torch.cat(topk_indices_list, dim=0)
+        # breakpoint()
+
+        return topk_indices_final
 
     def forward_indexer(
         self,
@@ -338,7 +432,8 @@ class Indexer(CustomOp):
             tokens_per_batch = forward_batch.token_to_kv_pool.size // forward_batch.batch_size + forward_batch.batch_size
             print("dsa tokens_per_batch = ", tokens_per_batch)
             self.k_cache = torch.zeros(forward_batch.batch_size, tokens_per_batch, self.head_dim,
-                dtype=query.dtype, device=query.device)
+                dtype=x.dtype, device=x.device)
+            # self.k_scales = torch.zeros(forward_batch.batch_size, tokens_per_batch, dtype=x.dtype, device=x.device)
         
         # key = key.reshape(forward_batch.batch_size, key.shape[-3] // forward_batch.batch_size, key.shape[-1])
 
@@ -371,6 +466,9 @@ class Indexer(CustomOp):
             q_len_start = q_len_end
 
         if forward_batch.forward_mode.is_extend():
+            global index_score_rsv
+            if index_score_rsv is not None and layer_id == 0:
+                index_score_rsv[...] = -65504.
             # do not cal indexer for prefill
             return None
 

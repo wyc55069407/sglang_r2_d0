@@ -1,7 +1,7 @@
 #include "utils.h"
 
 
-template<uint32_t TD>
+template<uint32_t TD, bool IS_FIRST_ROUND, bool IS_LAST_ROUND>
 inline void esimd_topk_local(
     uint8_t* input,
     uint8_t* input_idx,
@@ -11,6 +11,8 @@ inline void esimd_topk_local(
     uint8_t* out_ordered,
     uint8_t* out_idx,
     uint32_t RCOUNT,
+    int64_t output_final_out,
+    int64_t batch_n,
     sycl::queue& dpcpp_queue) {
 
     // assmue RCOUNT*total_count = RCOUNT * TD * 64, if TD=128, RCOUNT*total_count = RCOUNT*8192
@@ -20,9 +22,9 @@ inline void esimd_topk_local(
     constexpr int total_count = TD * 64;
     int n_threads = 64;
 
-    sycl::range<1> GlobalRange(RCOUNT * n_threads);
-    sycl::range<1> LocalRange(n_threads);
-    sycl::nd_range<1> Range(GlobalRange, LocalRange);
+    sycl::range<2> GlobalRange(batch_n, RCOUNT * n_threads);
+    sycl::range<2> LocalRange(1, n_threads);
+    sycl::nd_range<2> Range(GlobalRange, LocalRange);
 
     // input and input_idx size is (RCOUNT, total_count)  fp16, uint32_t
     // out_ordered and out_idx size is (RCOUNT, topk)   fp16, uint32_t
@@ -37,7 +39,7 @@ inline void esimd_topk_local(
 
     dpcpp_queue.submit([&](handler& cgh) {
     cgh.parallel_for(
-      Range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
+      Range, [=](nd_item<2> ndi) SYCL_ESIMD_KERNEL {
 
         constexpr int barrel_buf_size = 64 * 16 * sizeof(uint32_t);
         constexpr int barrel_reduce_buf_size = 64 * sizeof(uint32_t);
@@ -50,8 +52,9 @@ inline void esimd_topk_local(
         constexpr int input_offset = barrel_reduce_buf_offset + barrel_reduce_buf_size;
         constexpr int input_idx_offset = input_offset + input_size;
 
-        int gid = ndi.get_group(0);
-        int tid = ndi.get_local_id(0);
+        int gid = ndi.get_group(1);
+        int tid = ndi.get_local_id(1);
+        int bid = ndi.get_group(0);
 
         // get input and input idx
         int cur_input_offset = input_offset;
@@ -59,8 +62,19 @@ inline void esimd_topk_local(
         int cur_output_offset = 0;
         int cur_output_idx_offset = 0;
 
-        simd<fp16, TD> input_cur = block_load<fp16, TD>((fp16*)input + gid * total_count + TD * tid);
-        simd<uint32_t, TD> input_idx_cur = block_load<uint32_t, TD>((uint32_t*)input_idx + gid * total_count + TD * tid);
+        // assume batch_stride is 160 * 1024 elements, middle batch_stride 10 * topk, last batch_stride topk
+        int batch_stride = IS_FIRST_ROUND ? (160 * 1024) : (10 * topk);
+        int batch_stride_out = IS_LAST_ROUND ? topk : (10 * topk);
+        simd<fp16, TD> input_cur_in = block_load<fp16, TD>((fp16*)input + bid * batch_stride + gid * total_count + TD * tid);
+        simd<uint32_t, TD> input_idx_cur(0, 1);
+        if (IS_FIRST_ROUND)
+        {
+          input_idx_cur = input_idx_cur + gid * total_count + TD * tid;
+        }
+        else
+        {
+          input_idx_cur = block_load<uint32_t, TD>((uint32_t*)input_idx + bid * batch_stride + gid * total_count + TD * tid);
+        }
 
         // slm_block_store<fp16, TD>(cur_input_offset + TD * tid * sizeof(fp16), input_cur);
         // slm_block_store<uint32_t, TD>(cur_input_idx_offset + TD * tid * sizeof(uint32_t), input_idx_cur);
@@ -77,14 +91,21 @@ inline void esimd_topk_local(
 
           if (step_idx > 0)
           {
-            input_cur = slm_block_load<fp16, TD>(cur_input_offset + TD * tid * sizeof(fp16));
+            input_cur_in = slm_block_load<fp16, TD>(cur_input_offset + TD * tid * sizeof(fp16));
             input_idx_cur = slm_block_load<uint32_t, TD>(cur_input_idx_offset + TD * tid * sizeof(uint32_t));
           }
+
+          // handle FP16 input
+          simd<uint16_t, TD> input_cur_positive = input_cur_in.template bit_cast_view<uint16_t>().template select<TD, 1>(0) | 0x8000;
+          simd<uint16_t, TD> input_cur_nagative = ~(input_cur_in.template bit_cast_view<uint16_t>().template select<TD, 1>(0));
+          simd_mask<TD> mask_i = (input_cur_in.template bit_cast_view<uint16_t>().template select<TD, 1>(0) & 0x8000) != 0;
+          // input_cur_in & 0x8000   负数，  否则正数
+          simd<uint16_t, TD> input_cur;
+          input_cur.merge(input_cur_nagative, input_cur_positive, mask_i);
           
           // 4 substeps radix_index, cumsum, cumsum_2, scan
           // radix_index ------------------------------------------------------------------------------------------------
-          simd<uint16_t, TD> input_barrel_indexing;
-          input_barrel_indexing = input_cur.template bit_cast_view<uint16_t>().template select<TD, 1>(0) & field;
+          simd<uint16_t, TD> input_barrel_indexing = input_cur & field;
           input_barrel_indexing = (input_barrel_indexing >> (step_idx*4));
 
           simd<uint32_t, 16> local_barrel{0};
@@ -145,7 +166,7 @@ inline void esimd_topk_local(
           #pragma unroll
           for (int k = TD-1; k >= 0 ; k--)
           {
-            fp16 out_ordered_cur = input_cur[k];
+            fp16 out_ordered_cur = input_cur_in[k]; // use orig input
             uint32_t out_idx_cur = input_idx_cur[k];
             
             uint32_t new_offset = local_barrel[input_barrel_indexing[k]];
@@ -166,8 +187,11 @@ inline void esimd_topk_local(
         simd<fp16, 32> output_cur = slm_block_load<fp16, 32>(final_output_offset + tid * 32 * sizeof(fp16));
         simd<uint32_t, 32> output_idx_cur = slm_block_load<uint32_t, 32>(final_output_idx_offset + tid * 32 * sizeof(uint32_t));
         
-        block_store<fp16, 32>((fp16*)out_ordered + gid * topk + tid * 32, output_cur);
-        block_store<uint32_t, 32>((uint32_t*)out_idx + gid * topk + tid * 32, output_idx_cur);
+        if (output_final_out)
+        {
+          block_store<fp16, 32>((fp16*)out_ordered + bid * batch_stride_out + gid * topk + tid * 32, output_cur);
+        }
+        block_store<uint32_t, 32>((uint32_t*)out_idx + bid * batch_stride_out + gid * topk + tid * 32, output_idx_cur);
       });
   });
 

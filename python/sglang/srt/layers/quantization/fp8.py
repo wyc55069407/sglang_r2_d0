@@ -95,7 +95,7 @@ import os
 
 enable_esimd_opt = bool(int(os.getenv("ENABLE_ESIMD_FP8_GEMM_OPT", "0")))
 if enable_esimd_opt:
-    from sgl_kernel_esimd import esimd_kernel_uni
+    from sgl_kernel_esimd import esimd_kernel_uni, esimd_kernel_uni_lgrf
 
 ACTIVATION_SCHEMES = ["static", "dynamic"]
 
@@ -539,27 +539,11 @@ class Fp8LinearMethod(LinearMethodBase):
             weight,
             weight_scale,
             bias_in,
-            output,
-            output,
-            output,
-            output,
-            output,
-            output,
+            output, output, output, output, output, output,
             5000,
-            M,
-            N,
-            K,
-            batch,
-            block_n,
-            block_k,
-            has_bias,
-            1,
-            1,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
+            M, N, K,
+            batch, block_n, block_k, has_bias,
+            1, 1, 1.0, 1.0, 1.0, 1.0, 1.0,
         )
 
         return output

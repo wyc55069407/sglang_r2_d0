@@ -1020,9 +1020,9 @@ class TritonAttnBackend(AttentionBackend):
                 for i in range(forward_batch.batch_size):
                     kvlen = kv_indptr_updated[i+1] - kv_indptr_updated[i]
                     if kvlen >= 2048:
-                        kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]][forward_batch.topk_indices[i]]
+                        kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]][forward_batch.topk_indices[i].to(torch.int64)]
                     else:
-                        kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]][forward_batch.topk_indices[i, :kvlen]]
+                        kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]]
 
                 kv_indptr = kv_indptr_updated
                 kv_indices = kv_indices_new

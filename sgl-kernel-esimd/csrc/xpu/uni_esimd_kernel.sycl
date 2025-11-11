@@ -1629,18 +1629,17 @@ inline void esimd_topk(
 
 }
 
-
+template<bool IS_FIRST_ROUND, bool IS_LAST_ROUND>
 inline void esimd_topk_fused(
     uint8_t* input,
     uint8_t* input_idx,
-    uint8_t* debug_buf,
-    uint8_t* debug_buf1,
-    uint8_t* debug_buf2,
     uint8_t* out_ordered,
     uint8_t* out_idx,
     int64_t total_count,
     uint32_t RCOUNT,
     int64_t topk,
+    int64_t output_final_out,
+    int64_t batch_n,
     sycl::queue& dpcpp_queue) {
 
     // assume topk is always 2048
@@ -1654,28 +1653,138 @@ inline void esimd_topk_fused(
     switch(total_count)
     {
     case 4096:
-      esimd_topk_local<64>(input, input_idx, /*debug_buf, debug_buf1, debug_buf2,*/ out_ordered, out_idx, RCOUNT, dpcpp_queue);
+      esimd_topk_local<64, IS_FIRST_ROUND, IS_LAST_ROUND>(input, input_idx, out_ordered, out_idx, RCOUNT, output_final_out, batch_n, dpcpp_queue);
     break;
     case 8192:
-      esimd_topk_local<128>(input, input_idx, /*debug_buf, debug_buf1, debug_buf2,*/ out_ordered, out_idx, RCOUNT, dpcpp_queue);
+      esimd_topk_local<128, IS_FIRST_ROUND, IS_LAST_ROUND>(input, input_idx, out_ordered, out_idx, RCOUNT, output_final_out, batch_n, dpcpp_queue);
     break;
     case 12288:
-      esimd_topk_local<192>(input, input_idx, /*debug_buf, debug_buf1, debug_buf2,*/ out_ordered, out_idx, RCOUNT, dpcpp_queue);
+      esimd_topk_local<192, IS_FIRST_ROUND, IS_LAST_ROUND>(input, input_idx, out_ordered, out_idx, RCOUNT, output_final_out, batch_n, dpcpp_queue);
     break;
     case 16384:
-      esimd_topk_local<256>(input, input_idx, /*debug_buf, debug_buf1, debug_buf2,*/ out_ordered, out_idx, RCOUNT, dpcpp_queue);
+      esimd_topk_local<256, IS_FIRST_ROUND, IS_LAST_ROUND>(input, input_idx, out_ordered, out_idx, RCOUNT, output_final_out, batch_n, dpcpp_queue);
     break;
     case 20480:
-      esimd_topk_local<320>(input, input_idx, /*debug_buf, debug_buf1, debug_buf2,*/ out_ordered, out_idx, RCOUNT, dpcpp_queue);
+      esimd_topk_local<320, IS_FIRST_ROUND, IS_LAST_ROUND>(input, input_idx, out_ordered, out_idx, RCOUNT, output_final_out, batch_n, dpcpp_queue);
     break;
     default:
       printf("---------- total_count not supported %d----------\n", (int)total_count);
     break;
     }
     
+}
+
+inline void esimd_topk_multi_round(
+    uint8_t* input,
+    uint8_t* input_idx,
+    uint8_t* out_ordered,
+    uint8_t* out_idx,
+    uint8_t* final_out_ordered,
+    uint8_t* final_out_idx,
+    int64_t total_count,
+    uint32_t RCOUNT,
+    int64_t topk,
+    int64_t output_final_out,
+    int64_t batch_n,
+    sycl::queue& dpcpp_queue) {
+
+    // assume topk is always 2048
+    if (topk != 2048)
+    {
+      printf("topk only supports 2048!!\n");
+      return;
+    }
+
+    if (RCOUNT > 1)  // 2, 4, 6, 8, 10
+    {
+      esimd_topk_fused<true, false>(input, input_idx, out_ordered, out_idx, total_count, RCOUNT, topk, 1, batch_n, dpcpp_queue);
+      esimd_topk_fused<false, true>(out_ordered, out_idx, final_out_ordered, final_out_idx, topk * RCOUNT, 1, topk, output_final_out, batch_n, dpcpp_queue);
+    }
+    else if (RCOUNT == 1)
+    {
+      esimd_topk_fused<true, true>(input, input_idx, final_out_ordered, final_out_idx, total_count, RCOUNT, topk, output_final_out, batch_n, dpcpp_queue);
+    }
+    else
+    {
+      printf("---------- group not supported %d----------\n", (int)RCOUNT);
+    }
     
 }
 
+inline void esimd_update_kv_dsa_index(
+    uint8_t* kv_indptr,
+    uint8_t* kv_indices,
+    uint8_t* topk_indices,
+    uint8_t* kv_indptr_out,
+    uint8_t* kv_indices_out,
+    int64_t batch_num,
+    sycl::queue& dpcpp_queue) {
+
+  // assume topk is 2048
+  constexpr int topk = 2048;
+  int n_wgs = topk / 32;
+  sycl::range<1> GlobalRange(batch_num * n_wgs);
+  sycl::range<1> LocalRange(1);
+  sycl::nd_range<1> Range(GlobalRange, LocalRange);
+
+  dpcpp_queue.submit([&](handler& cgh) {
+    cgh.parallel_for(
+      Range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
+
+        int gid = ndi.get_group(0);
+        int b = gid / n_wgs;
+        int lid = gid % n_wgs;
+
+        // dup cal for kv_indptr  --------------------
+        simd<int32_t, 16> kv_indptr_all{0};
+        simd<int32_t, 16> kv_indptr_updated{0};
+        for (int bl = 0; bl < batch_num + 1; bl++)
+        {
+          kv_indptr_all.template select<1, 1>(bl) = block_load<int32_t, 1>((int32_t*)kv_indptr + bl);
+        }
+        for (int bl = 1; bl < batch_num + 1; bl++)
+        {
+          kv_indptr_updated[bl] = min(kv_indptr_all[bl] - kv_indptr_all[bl-1], 2048) + kv_indptr_updated[bl-1];
+          block_store<int32_t, 1>((int32_t*)kv_indptr_out + bl, kv_indptr_updated[bl]);
+        }
+        // dup cal for kv_indptr done --------------------
+
+        simd<int32_t, 2> kv_indptr_cur = kv_indptr_all.template select<2, 1>(b);
+        int32_t kv_lens_cur = kv_indptr_cur[1] - kv_indptr_cur[0];
+        int32_t kv_indptr_cur_0 = kv_indptr_cur[0];
+
+        if (kv_lens_cur > 2048)
+        {
+          simd<uint32_t, 32> topk_indices_cur = block_load<uint32_t, 32>((uint32_t*)topk_indices + b * 2048 + lid * 32);
+
+          simd<uint32_t, 32> offsets = (topk_indices_cur + kv_indptr_cur_0) * sizeof(int32_t);
+          simd<int32_t, 32> topk_indices_got = gather<int32_t, 32>((int32_t*)kv_indices, offsets);
+
+          block_store<int32_t, 32>((int32_t*)kv_indices_out + kv_indptr_updated[b] + lid * 32, topk_indices_got);
+        }
+        else
+        {
+          int rest = kv_lens_cur % 32;
+          int cnt = kv_lens_cur / 32;
+          if (lid * 32 < kv_lens_cur)
+          {
+            simd<int32_t, 32> topk_indices_got = block_load<int32_t, 32>((int32_t*)kv_indices + kv_indptr_cur_0 + lid * 32);
+            block_store<int32_t, 32>((int32_t*)kv_indices_out + kv_indptr_updated[b] + lid * 32, topk_indices_got);
+          }
+          else if (rest != 0 && lid == cnt)
+          {
+            for (int i = 0; i < rest; i++)
+            {
+              simd<int32_t, 1> topk_indices_got = block_load<int32_t, 1>((int32_t*)kv_indices + kv_indptr_cur_0 + lid * 32 + i);
+              block_store<int32_t, 1>((int32_t*)kv_indices_out + kv_indptr_updated[b] + lid * 32 + i, topk_indices_got);
+            }
+          }
+        }
+        
+      });
+  });
+
+}
 
 at::Tensor esimd_kernel_uni(
     at::Tensor _p0,
@@ -1770,7 +1879,10 @@ at::Tensor esimd_kernel_uni(
           esimd_topk(p0, p1, p2, p3, p4, p5, p6, p7, p8, i1, i2, dpcpp_queue);
         break;
         case 3311:
-          esimd_topk_fused(p0, p1, p2, p3, p4, p5, p6, i1, i2, i3, dpcpp_queue);
+          esimd_topk_multi_round(p0, p1, p2, p3, p4, p5, i1, i2, i3, i4, i5, dpcpp_queue);
+        break;
+        case 3777:
+          esimd_update_kv_dsa_index(p0, p1, p2, p3, p4, i1, dpcpp_queue);
         break;
         default:
           printf("---------- esimd kernel op not supported, op is %lld ----------\n", i0);
