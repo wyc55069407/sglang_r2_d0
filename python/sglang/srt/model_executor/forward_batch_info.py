@@ -163,6 +163,8 @@ class ForwardBatch:
     # Optional seq_lens on cpu
     seq_lens_cpu: Optional[torch.Tensor] = None
 
+    req_pool_indices_cpu: Optional[torch.Tensor] = None
+
     # For logprob
     return_logprob: bool = False
     top_logprobs_nums: Optional[List[int]] = None
@@ -272,6 +274,10 @@ class ForwardBatch:
     ):
         from sglang.srt.two_batch_overlap import TboForwardBatchPreparer
 
+        if batch.seq_lens_cpu is None:
+            batch.seq_lens_cpu = batch.seq_lens.cpu()
+        req_pool_indices_cpu = batch.req_pool_indices.cpu()
+
         ret = cls(
             forward_mode=batch.forward_mode,
             batch_size=len(batch.seq_lens),
@@ -286,6 +292,7 @@ class ForwardBatch:
             encoder_out_cache_loc=batch.encoder_out_cache_loc,
             seq_lens_sum=batch.seq_lens_sum,
             seq_lens_cpu=batch.seq_lens_cpu,
+            req_pool_indices_cpu=req_pool_indices_cpu,
             return_logprob=batch.return_logprob,
             top_logprobs_nums=batch.top_logprobs_nums,
             token_ids_logprobs=batch.token_ids_logprobs,

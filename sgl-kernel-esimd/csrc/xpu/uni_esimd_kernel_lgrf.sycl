@@ -199,6 +199,211 @@ void esimd_kernel_sdp_mla(
     runSdpFusion_mla(dpcpp_queue, q_extend, k_extend, v_extend, o_extend, k_buffer, v_buffer, kv_indices, num_heads, num_heads_kv,extend_seq_len, prefix_seq_len,qk_dim,v_dim ,attn_scale );
   }
 
+void esimd_kernel_dsa_qk_attn(
+    uint8_t* query,    // [b, 64, 128]
+    uint8_t* k_cache,  // [b, k_cache_batch_stride, 128]
+    uint8_t* k_scale,  // [b, k_cache_batch_stride]
+    uint8_t* weights,  // [b, 1, 64]
+    uint8_t* index_score_rsv,
+    int64_t batch_num,
+    int64_t k_cache_batch_stride,
+    int64_t seq_lens_cpu_addr,  // [3260, 5136,   10,  778]
+sycl::queue& dpcpp_queue)
+{
+  // assume q heads 64   k head 1    head_dim is 128
+  int64_t* seq_lens_cpu = (int64_t*)seq_lens_cpu_addr;
+
+  int64_t seq_lens_kernel[8] = {0};
+  int64_t k8_num_start_kernel[9] = {0};
+
+  int k8_num_cumsum = 0;
+  for (int b = 0; b < batch_num; b++)
+  {
+    int cur_seq_len = seq_lens_cpu[b];
+    int cur_k8_num = (cur_seq_len + 7) / 8;
+    k8_num_start_kernel[b] = k8_num_cumsum;
+    k8_num_cumsum += cur_k8_num;
+    seq_lens_kernel[b] = cur_seq_len;
+
+    // printf("cur_seq_len = %d\n", cur_seq_len);
+    // printf("cur_k8_num = %d\n", cur_k8_num);
+    // printf("k8_num_start_kernel[%d] = %d\n", b, k8_num_start_kernel[b]);
+  }
+  k8_num_start_kernel[batch_num] = k8_num_cumsum;
+
+  // printf("k8_num_cumsum = %d\n", k8_num_cumsum);
+
+  sycl::range<1> GlobalRange(k8_num_cumsum);
+  sycl::range<1> LocalRange(1);
+  sycl::nd_range<1> Range(GlobalRange, LocalRange);
+
+  dpcpp_queue.submit([&](handler& cgh) {
+    cgh.parallel_for(
+      Range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
+
+        int gid = ndi.get_group(0);
+
+        constexpr int index_score_rsv_stride = 163840;
+
+        int cur_batch = 0;
+        bool isLast = false;
+        for (int b = 1; b < batch_num+1; b++)
+        {
+          if (gid < k8_num_start_kernel[b])
+          {
+            if (gid == k8_num_start_kernel[b] - 1)
+            {
+              isLast = true;
+            }
+
+            gid = gid - k8_num_start_kernel[b-1];
+            break;
+          } 
+          cur_batch++;
+        }
+        
+        // q [b, 64, 128] => [b, 4, 16, 128] => [b, 4, 16, 4, 32] => [b, 4, 4(-), _16, 32_]  16x32 VNNI
+        // k [b, k_cache_batch_stride, 128] => [b, cur_seq_len, 128] => [b, cur_seq_len / 8, 8, 128] => [b, k8_num, 8, 128]
+        // => [b, k8_num, 8, 4, 32] => => [b, k8_num, 4, 8, 32] => [b, k8_num, 4(-), _8, 32_]  8x16 2D
+        // o [b, k8_num, 8, 64] => o [b, k8_num, 8, 4, 16]  => o [b, k8_num, 4, _8, 16_]
+
+        // k scale len 8
+        // o dequant and shuffle back to [b, k8_num, 8, 4, 16] => [b, k8_num, 8, 64]
+        // weight [b, 64]
+        // o relu and * weight and sum [b, k8_num, 8] => write out
+
+        // simd<int8_t, 4*4*16*32> q_cur;
+        simd<int8_t, 4*16*32> q_cur;
+        simd<int8_t, 4*8*32> k_cur;
+        simd<float, 8> k_scale_cur = block_load<fp16, 8>((fp16*)k_scale + cur_batch * k_cache_batch_stride + gid * 8);
+        simd<fp16, 64> weight_cur = block_load<fp16, 64>((fp16*)weights + cur_batch * 64);
+        simd<int32_t, 4*8*16> o_int_cur;
+        simd<fp16, 8*4*16> o_cur;  // should be dequant and shuffled
+        simd<fp16, 8> o_final;
+
+        int64_t q_base_offset = (cur_batch * 64 * 128) * sizeof(int8_t);
+        simd<uint32_t, 16> gather_offset(q_base_offset, 128*sizeof(int8_t));
+
+        // #pragma unroll
+        // for (int i = 0; i < 4; i++)
+        // {
+        //   #pragma unroll
+        //   for (int k = 0; k < 4; k++)
+        //   {
+        //     q_cur.template bit_cast_view<uint32_t>().template select<16*32/4, 1>(i*4*16*32/4 + k*16*32/4) =
+        //     __ESIMD_ENS::lsc_gather<
+        //     uint32_t,
+        //     8,
+        //     __ESIMD_ENS::lsc_data_size::u32,
+        //     __ESIMD_ENS::cache_hint::cached,
+        //     __ESIMD_ENS::cache_hint::cached,
+        //     16,
+        //     uint32_t
+        //     >((uint32_t*)query, gather_offset + (i*16*128 + k*32) * sizeof(int8_t));
+        //   }
+        // }
+
+        int64_t k_base_offset = (cur_batch * k_cache_batch_stride * 128 + gid * 8 * 128) * sizeof(int8_t);
+        #pragma unroll
+        for (int k = 0; k < 4; k++)
+        {
+          k_cur.template select<32*8, 1>(k*32*8) = __ESIMD_ENS::lsc_load_2d<
+            int8_t, 32, 8, 1,  //32x8
+            false, false,
+            __ESIMD_ENS::cache_hint::cached,
+            __ESIMD_ENS::cache_hint::cached>((int8_t*)k_cache + k_base_offset,
+                128 - 1, 8 - 1, 128 - 1,
+                k * 32, // X cord
+                0);  // Y cord
+        }
+        
+        #pragma unroll
+        for (int i = 0; i < 4; i++)
+        {
+          simd<int32_t, 8*16> cc_xmx{0};
+
+          #pragma unroll
+          for (int k = 0; k < 4; k++)
+          {
+            q_cur.template bit_cast_view<uint32_t>().template select<16*32/4, 1>(k*16*32/4) =
+              __ESIMD_ENS::lsc_gather<
+              uint32_t,
+              8,
+              __ESIMD_ENS::lsc_data_size::u32,
+              __ESIMD_ENS::cache_hint::cached,
+              __ESIMD_ENS::cache_hint::cached,
+              16,
+              uint32_t
+              >((uint32_t*)query, gather_offset + (i*16*128 + k*32) * sizeof(int8_t));
+          }
+
+          #pragma unroll
+          for (int k = 0; k < 4; k++)
+          {
+            // dpas
+            simd<int8_t, 8*32> bb_xmx{0};
+            simd<int8_t, 16*32> aa_xmx{0};
+
+            bb_xmx = k_cur.template select<8*32,1>(k*8*32);
+            aa_xmx = q_cur.template select<16*32, 1>(k*16*32);
+            cc_xmx = sycl::ext::intel::esimd::xmx::dpas<8, 8, int32_t, int32_t, int8_t, int8_t>(cc_xmx, aa_xmx, bb_xmx);
+          }
+          o_int_cur.template select<8*16,1>(i*8*16) = cc_xmx;
+        }
+
+        // dequant and shuffle to [b, k8_num, 8, 4, 16]
+        #pragma unroll
+        for (int i = 0; i < 4; i++)
+        {
+          #pragma unroll
+          for (int j = 0; j < 8; j++)
+          {
+            simd<float, 16> o_temp = o_int_cur.template select<16,1>(i*8*16 + j*16);
+            o_temp.template select<16,1>(0) = o_temp.template select<16,1>(0) * k_scale_cur[j];
+            o_cur.template select<16,1>(i*16 + j*4*16) = o_temp;
+          }
+        }
+
+        // #pragma unroll
+        // for (int j = 0; j < 8; j++)
+        // {
+        //   simd<fp16, 64> o_final2 = o_cur.template select<64, 1>(64*j);
+        //   block_store<fp16, 64>((fp16*)index_score_rsv + gid * 8 * 64 + 64*j, o_final2);
+        // }
+
+        // relu and * weight and sum
+        #pragma unroll
+        for (int j = 0; j < 8; j++)
+        {
+          simd<fp16, 64> o_temp = o_cur.template select<64,1>(j*64);
+          simd_mask<64> mask = o_temp > 0;
+          o_temp.merge(o_temp, 0, mask);
+          o_final[j] = sycl::ext::intel::esimd::reduce<fp16, fp16, 64, std::plus<>>(
+            o_temp * weight_cur, std::plus<>());
+        }
+ 
+        int cur_seq_len = seq_lens_kernel[cur_batch];
+        int cur_rest = cur_seq_len % 8;
+        int last_k_num = 8;
+        if (isLast && cur_rest != 0)
+        {
+          last_k_num = cur_rest;
+
+          for (int i = 0; i < last_k_num; i++)
+          {
+            block_store<fp16, 1>((fp16*)index_score_rsv + gid * 8 + cur_batch * index_score_rsv_stride + i, o_final[i]);
+          }
+        }
+        else
+        {
+          block_store<fp16, 8>((fp16*)index_score_rsv + gid * 8 + cur_batch * index_score_rsv_stride, o_final);
+        }
+      });
+  });
+
+
+}
+
 at::Tensor esimd_kernel_uni_lgrf(
     at::Tensor _p0,
     at::Tensor _p1,
@@ -245,6 +450,9 @@ at::Tensor esimd_kernel_uni_lgrf(
       switch(i0){
         case 1006:   // sdp for MLA
           esimd_kernel_sdp_mla(p0, p1, p2, p3, p4, p5, p6, i1, i2, i3, i4, i5, i6, f0, dpcpp_queue);
+        break;
+        case 4004:
+          esimd_kernel_dsa_qk_attn(p0, p1, p2, p3, p4, i1, i2, i3, dpcpp_queue);
         break;
         default:
           printf("---------- esimd kernel op not supported, op is %lld ----------\n", i0);

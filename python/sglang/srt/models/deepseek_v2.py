@@ -2727,7 +2727,7 @@ class DeepseekV2Model(nn.Module):
     ) -> None:
         # YC WA
         if enable_6_layer_dbg:
-            config.num_hidden_layers = 3
+            config.num_hidden_layers = 6
         super().__init__()
         self.padding_id = config.pad_token_id
         self.vocab_size = config.vocab_size

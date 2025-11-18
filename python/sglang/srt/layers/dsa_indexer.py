@@ -16,7 +16,7 @@ from sglang.srt.layers.rotary_embedding import get_rope_wrapper
 from sglang.srt.model_executor.forward_batch_info import ForwardBatch
 from sglang.srt.managers.schedule_batch import global_server_args_dict
 
-from sgl_kernel_esimd import esimd_kernel_uni
+from sgl_kernel_esimd import esimd_kernel_uni, esimd_kernel_uni_lgrf
 
 # COPIED FROM DeepGEMM
 def ceil_div(x: int, y: int) -> int:
@@ -130,6 +130,7 @@ class Indexer(CustomOp):
         self.q_lora_rank = q_lora_rank
         self.layer_id = layer_id
         self.alt_stream = alt_stream
+        self.enable_quant = True
 
         self.wq_b = ReplicatedLinear(
             self.q_lora_rank,
@@ -203,11 +204,13 @@ class Indexer(CustomOp):
 
         return ans
 
-    def _get_logits_head_gate(self, x: torch.Tensor):
+    def _get_logits_head_gate(self, x: torch.Tensor, q_scale):
         weights, _ = self.weights_proj(x)
-        weights = weights * self.n_heads**-0.5
-        # weights = weights.unsqueeze(-1) * q_scale * self.softmax_scale
-        weights = weights.unsqueeze(-1) * self.softmax_scale
+        # weights = weights * self.n_heads**-0.5
+        if self.enable_quant:
+            weights = weights.unsqueeze(-1) * q_scale.unsqueeze(-1) * self.softmax_scale
+        else:
+            weights = weights.unsqueeze(-1) * self.softmax_scale  # disable quant
         return weights
     
     def oneline_quant(self, input: torch.Tensor, group_size: int):
@@ -217,6 +220,7 @@ class Indexer(CustomOp):
 
             grouped_max = grouped_input[torch.arange(max_indices.numel(), device=input.device), max_indices]
             scales = grouped_max / 127
+            scales = scales.abs()
             iscales = torch.nan_to_num(1 / scales).unsqueeze(-1)
             scales = scales.half().reshape((input.size(0), -1))
 
@@ -264,10 +268,13 @@ class Indexer(CustomOp):
 
         # query = deq_query
         # key = deq_key
-        
+        if self.enable_quant:
+            return query_q, key_q, query_scale, key_scale
+        else:
+            return query, key, query_scale, key_scale # disable quant
         # breakpoint()
 
-        return query, key
+        # return query, key
 
     def forward_indexer_bs_1(
         self,
@@ -294,59 +301,107 @@ class Indexer(CustomOp):
         q_len_start = 0
         max_q_len = 0
 
-        for i in range(forward_batch.batch_size):
-            seq_len = forward_batch.seq_lens[i].item()
-            q_len = (
-                forward_batch.extend_seq_lens_cpu[i]
-                if forward_batch.forward_mode.is_extend()
-                else 1
-            )
-            q_len_end = q_len_start + q_len
+        dsa_qk_attn_fuse = True
+        if dsa_qk_attn_fuse:
+            # seq_lens_cpu = forward_batch.seq_lens.to("cpu")
+            seq_lens_cpu_addr = forward_batch.seq_lens_cpu.data_ptr()
 
-            query_partial = query[q_len_start:q_len_end]
-            query_partial = query_partial.unsqueeze(0).contiguous()
+            # uint8_t* query,    // [b, 64, 128]
+            # uint8_t* k_cache,  // [b, k_cache_batch_stride, 128]
+            # uint8_t* k_scale,  // [b, k_cache_batch_stride]
+            # uint8_t* weights,  // [b, 1, 64]
+            # uint8_t* index_score_rsv,
+            # int64_t batch_num,
+            # int64_t k_cache_batch_stride,
+            # int64_t seq_lens_cpu_addr,  // [3260, 5136,   10,  778]
+            k_cache_batch_stride = self.k_cache.shape[-2]
+            # index_score_rsv_int = torch.zeros(16384, 64, device=query.device, dtype=torch.float16) - 65504
+            index_score_rsv_int = index_score_rsv[forward_batch.tbo_start_batch_idx:]
 
-            weights_partial = weights[q_len_start:q_len_end]
-            weights_partial = weights_partial.squeeze(-1).unsqueeze(0).contiguous()
+            esimd_kernel_uni_lgrf(
+                    query,
+                    self.k_cache,
+                    self.k_scale,
+                    weights, 
+                    index_score_rsv_int, 
+                    index_score_rsv_int, index_score_rsv_int, index_score_rsv_int, index_score_rsv_int, index_score_rsv_int,
+                    4004,
+                    forward_batch.batch_size,
+                    k_cache_batch_stride,
+                    seq_lens_cpu_addr, 
+                    0, 0, 0, 0, 0, 0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                )
 
-            start_pos = 0  # always start from 0 for k cache
-            end_pos = seq_len
-
-            ii = i + forward_batch.tbo_start_batch_idx
-
-            key = self.k_cache[ii:ii+1, start_pos:end_pos]
-            # index_score = fp8_index(
-            #     query_partial,
-            #     weights_partial,
-            #     key
-            # )
-            """
-            Perform index score using FP8 precision.
-
-            Args:
-                q (torch.Tensor): The Q tensor, must be contiguous.
-                q_s (torch.Tensor): The scaling factor for Q (float), must be contiguous.
-                k (torch.Tensor): The K tensor, must be contiguous.
-                k_s (torch.Tensor): The scaling factor for K (e8m0 here), must be contiguous.
-
-                fp8 q @ fp8 k -> fp32 logits
-                relu(fp32 logits) * q_s (weights) -> fp32 logits
-                fp32 logits -> fp32 logits_sum
-                fp32 logits_sum * k_s (e8m0) -> fp32 index_score
-            """
-            qp_shape = query_partial.shape
-            query_partial = query_partial.reshape(qp_shape[0], qp_shape[1]*qp_shape[2], qp_shape[3])
             # breakpoint()
-            logits = torch.matmul(query_partial, key.transpose(1, 2))
-            logits = logits.reshape(qp_shape[0], qp_shape[1], self.n_heads, logits.shape[-1])
 
-            index_score_rsv[i, :seq_len] = (torch.relu(logits) * weights_partial.unsqueeze(-1)).sum(dim=-2)
-            
-            # index_score = (torch.relu(logits) * weights_partial.unsqueeze(-1)).sum(dim=-2)
-            if seq_len > max_q_len:
-                max_q_len = seq_len
-            
-            q_len_start = q_len_end
+            for i in range(forward_batch.batch_size):
+                seq_len = forward_batch.seq_lens_cpu[i].item()
+                if seq_len > max_q_len:
+                    max_q_len = seq_len
+        else:
+            for i in range(forward_batch.batch_size):
+                seq_len = forward_batch.seq_lens[i].item()
+                q_len = (
+                    forward_batch.extend_seq_lens_cpu[i]
+                    if forward_batch.forward_mode.is_extend()
+                    else 1
+                )
+                q_len_end = q_len_start + q_len
+
+                query_partial = query[q_len_start:q_len_end]
+                query_partial = query_partial.unsqueeze(0).contiguous()
+
+                weights_partial = weights[q_len_start:q_len_end]
+                weights_partial = weights_partial.squeeze(-1).unsqueeze(0).contiguous()
+
+                start_pos = 0  # always start from 0 for k cache
+                end_pos = seq_len
+
+                ii = i + forward_batch.tbo_start_batch_idx
+
+                key = self.k_cache[ii:ii+1, start_pos:end_pos]
+                k_scale = self.k_scale[ii:ii+1, start_pos:end_pos]
+                # index_score = fp8_index(
+                #     query_partial,
+                #     weights_partial,
+                #     key
+                # )
+                """
+                Perform index score using FP8 precision.
+
+                Args:
+                    q (torch.Tensor): The Q tensor, must be contiguous.
+                    q_s (torch.Tensor): The scaling factor for Q (float), must be contiguous.
+                    k (torch.Tensor): The K tensor, must be contiguous.
+                    k_s (torch.Tensor): The scaling factor for K (e8m0 here), must be contiguous.
+
+                    fp8 q @ fp8 k -> fp32 logits
+                    relu(fp32 logits) * q_s (weights) -> fp32 logits
+                    fp32 logits -> fp32 logits_sum
+                    fp32 logits_sum * k_s (e8m0) -> fp32 index_score
+                """
+                qp_shape = query_partial.shape
+                query_partial = query_partial.reshape(qp_shape[0], qp_shape[1]*qp_shape[2], qp_shape[3])
+
+                query_partial = query_partial.to(torch.float32)
+                key = key.transpose(1, 2).to(torch.float32)
+                
+                logits = torch.matmul(query_partial, key)
+                logits = logits.reshape(qp_shape[0], qp_shape[1], self.n_heads, logits.shape[-1])
+
+                if self.enable_quant:
+                    logits = logits * k_scale
+                logits = logits.to(torch.float16)
+
+                index_score_rsv[i, :seq_len] = (torch.relu(logits) * weights_partial.unsqueeze(-1)).sum(dim=-2)
+
+                # breakpoint()
+                
+                # index_score = (torch.relu(logits) * weights_partial.unsqueeze(-1)).sum(dim=-2)
+                if seq_len > max_q_len:
+                    max_q_len = seq_len
+                
+                q_len_start = q_len_end
         
         topk_fuse_opt = True
         if topk_fuse_opt:
@@ -371,8 +426,8 @@ class Indexer(CustomOp):
 
             output_final_out = 0
             esimd_kernel_uni(
-                index_score_rsv,
-                index_score_rsv,
+                index_score_rsv[forward_batch.tbo_start_batch_idx:],
+                index_score_rsv[forward_batch.tbo_start_batch_idx:],
                 out_ordered,
                 out_idx, 
                 out_ordered, 
@@ -424,7 +479,7 @@ class Indexer(CustomOp):
         forward_batch: ForwardBatch,
         layer_id: int,
     ) -> Optional[torch.Tensor]:
-        query, key = self._get_q_k_bf16(q_lora, x, positions)
+        query, key, q_scale, k_scale = self._get_q_k_bf16(q_lora, x, positions)
 
         if not hasattr(self, "k_cache"):
             # YC WA
@@ -432,20 +487,22 @@ class Indexer(CustomOp):
             tokens_per_batch = forward_batch.token_to_kv_pool.size // forward_batch.batch_size + forward_batch.batch_size
             print("dsa tokens_per_batch = ", tokens_per_batch)
             self.k_cache = torch.zeros(forward_batch.batch_size, tokens_per_batch, self.head_dim,
-                dtype=x.dtype, device=x.device)
-            # self.k_scales = torch.zeros(forward_batch.batch_size, tokens_per_batch, dtype=x.dtype, device=x.device)
+                dtype=key.dtype, device=key.device)
+            self.k_scale = torch.zeros(forward_batch.batch_size, tokens_per_batch, dtype=x.dtype, device=x.device)
         
         # key = key.reshape(forward_batch.batch_size, key.shape[-3] // forward_batch.batch_size, key.shape[-1])
 
         key = key.squeeze(-2)
+        k_scale = k_scale.squeeze(-1)
 
         forward_batch.tbo_start_batch_idx = 0
         if forward_batch.req_pool_indices.shape[0] != self.k_cache.shape[0]:
-            forward_batch.tbo_start_batch_idx = forward_batch.req_pool_indices[0].item()
+            forward_batch.tbo_start_batch_idx = forward_batch.req_pool_indices_cpu[0].item()
+        # print("forward_batch.tbo_start_batch_idx = ", forward_batch.tbo_start_batch_idx)
 
         q_len_start = 0
         for i in range(forward_batch.batch_size):
-            seq_len = forward_batch.seq_lens[i].item()
+            seq_len = forward_batch.seq_lens_cpu[i].item()
             q_len = (
                 forward_batch.extend_seq_lens_cpu[i]
                 if forward_batch.forward_mode.is_extend()
@@ -460,6 +517,7 @@ class Indexer(CustomOp):
             ii = i + forward_batch.tbo_start_batch_idx
 
             self.k_cache[ii:ii+1, start_pos:end_pos] = key[q_len_start:q_len_end]
+            self.k_scale[ii:ii+1, start_pos:end_pos] = k_scale[q_len_start:q_len_end]
 
             # print("layer", layer_id, " batch", ii, " dsa: update k at: ", start_pos, "~", end_pos)
 
@@ -472,7 +530,7 @@ class Indexer(CustomOp):
             # do not cal indexer for prefill
             return None
 
-        weights = self._get_logits_head_gate(x)
+        weights = self._get_logits_head_gate(x, q_scale)
 
         topk_result = self.forward_indexer(
             query.contiguous(),
