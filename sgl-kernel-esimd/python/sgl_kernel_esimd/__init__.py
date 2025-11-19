@@ -21,6 +21,7 @@ from sgl_kernel_esimd.esimd_ops import (
     esimd_mul_lgrf,
     esimd_kernel_uni_lgrf,
     esimd_kernel_uni_large_params,
+    esimd_kernel_uni_huge_params,
 )
 
 from sgl_kernel_esimd.version import __version__

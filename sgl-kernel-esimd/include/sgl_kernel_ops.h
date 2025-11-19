@@ -213,6 +213,52 @@ at::Tensor esimd_kernel_uni_large_params(
     double f4
     );
 
+at::Tensor esimd_kernel_uni_huge_params(
+    at::Tensor _p0,
+    at::Tensor _p1,
+    at::Tensor _p2,
+    at::Tensor _p3,
+    at::Tensor _p4,
+    at::Tensor _p5,
+    at::Tensor _p6,
+    at::Tensor _p7,
+    at::Tensor _p8,
+    at::Tensor _p9,
+    at::Tensor _p10,
+    at::Tensor _p11,
+    at::Tensor _p12,
+    at::Tensor _p13,
+    at::Tensor _p14,
+    at::Tensor _p15,
+    at::Tensor _p16,
+    at::Tensor _p17,
+    at::Tensor _p18,
+    at::Tensor _p19,
+    at::Tensor _p20,
+    at::Tensor _p21,
+    at::Tensor _p22,
+    at::Tensor _p23,
+    at::Tensor _p24,
+    at::Tensor _p25,
+
+    int64_t i0,
+    int64_t i1,
+    int64_t i2,
+    int64_t i3,
+    int64_t i4,
+    int64_t i5,
+    int64_t i6,
+    int64_t i7,
+    int64_t i8,
+    int64_t i9,
+
+    double f0,
+    double f1,
+    double f2,
+    double f3,
+    double f4
+    );
+
 at::Tensor esimd_kernel_mul_lgrf(
     at::Tensor _p0,
     at::Tensor _p1,

@@ -759,25 +759,25 @@ inline void esimd_grouped_topk_fuse_with_gate(
   if (input_len == 1)
   {
     GEMV_a16_wfp16_block<fp16, 28, 256, 1, 1>(
-      hidden_states, gate_weight, nullptr, gating_output, input_len, 256, 7168, 1, 0, dpcpp_queue
+      hidden_states, gate_weight, nullptr, nullptr, gating_output, input_len, 256, 7168, 1, 0, 1.0, dpcpp_queue
     );
   }
   else if (input_len == 2)
   {
     GEMV_a16_wfp16_block<fp16, 28, 256, 1, 2>(
-      hidden_states, gate_weight, nullptr, gating_output, input_len, 256, 7168, 1, 0, dpcpp_queue
+      hidden_states, gate_weight, nullptr, nullptr, gating_output, input_len, 256, 7168, 1, 0, 1.0, dpcpp_queue
     );
   }
   else if (input_len <= 4)
   {
     GEMV_a16_wfp16_block<fp16, 28, 256, 1, 4>(
-      hidden_states, gate_weight, nullptr, gating_output, input_len, 256, 7168, 1, 0, dpcpp_queue
+      hidden_states, gate_weight, nullptr, nullptr, gating_output, input_len, 256, 7168, 1, 0, 1.0, dpcpp_queue
     );
   }
   else if (input_len <= 8)
   {
     GEMV_a16_wfp16_block<fp16, 28, 256, 1, 8>(
-      hidden_states, gate_weight, nullptr, gating_output, input_len, 256, 7168, 1, 0, dpcpp_queue
+      hidden_states, gate_weight, nullptr, nullptr, gating_output, input_len, 256, 7168, 1, 0, 1.0, dpcpp_queue
     );
   }
 
@@ -1069,25 +1069,25 @@ inline void esimd_grouped_topk_fuse_with_gate_kimi(
   if (input_len == 1)
   {
     GEMV_a16_wfp16_block<fp16, 28, 256, 1, 1>(
-      hidden_states, gate_weight, nullptr, gating_output, input_len, 384, 7168, 1, 0, dpcpp_queue
+      hidden_states, gate_weight, nullptr, nullptr, gating_output, input_len, 384, 7168, 1, 0, 1.0, dpcpp_queue
     );
   }
   else if (input_len == 2)
   {
     GEMV_a16_wfp16_block<fp16, 28, 256, 1, 2>(
-      hidden_states, gate_weight, nullptr, gating_output, input_len, 384, 7168, 1, 0, dpcpp_queue
+      hidden_states, gate_weight, nullptr, nullptr, gating_output, input_len, 384, 7168, 1, 0, 1.0, dpcpp_queue
     );
   }
   else if (input_len <= 4)
   {
     GEMV_a16_wfp16_block<fp16, 28, 256, 1, 4>(
-      hidden_states, gate_weight, nullptr, gating_output, input_len, 384, 7168, 1, 0, dpcpp_queue
+      hidden_states, gate_weight, nullptr, nullptr, gating_output, input_len, 384, 7168, 1, 0, 1.0, dpcpp_queue
     );
   }
   else if (input_len <= 8)
   {
     GEMV_a16_wfp16_block<fp16, 28, 256, 1, 8>(
-      hidden_states, gate_weight, nullptr, gating_output, input_len, 384, 7168, 1, 0, dpcpp_queue
+      hidden_states, gate_weight, nullptr, nullptr, gating_output, input_len, 384, 7168, 1, 0, 1.0, dpcpp_queue
     );
   }
 
@@ -1747,6 +1747,7 @@ inline void esimd_update_kv_dsa_index(
           kv_indptr_updated[bl] = min(kv_indptr_all[bl] - kv_indptr_all[bl-1], 2048) + kv_indptr_updated[bl-1];
           block_store<int32_t, 1>((int32_t*)kv_indptr_out + bl, kv_indptr_updated[bl]);
         }
+        block_store<int32_t, 1>((int32_t*)kv_indptr_out, kv_indptr_updated[0]); // store for 0
         // dup cal for kv_indptr done --------------------
 
         simd<int32_t, 2> kv_indptr_cur = kv_indptr_all.template select<2, 1>(b);
@@ -1783,6 +1784,364 @@ inline void esimd_update_kv_dsa_index(
         
       });
   });
+
+}
+
+inline void esimd_rope_quant_updatek(
+    uint8_t* query,
+    uint8_t* key,
+    uint8_t* knorm_weight,
+    uint8_t* knorm_bias,
+    uint8_t* positions,
+    uint8_t* cos_sin_cache,
+    uint8_t* query_out,
+    uint8_t* q_scale,
+    uint8_t* k_cache,
+    uint8_t* k_scale,
+    int64_t seq_lens_cpu_addr,
+    int64_t tbo_start_batch_idx,
+    int64_t tokens_per_batch,
+    int64_t batch_num,
+    float knorm_eps,
+    sycl::queue& dpcpp_queue) {
+  
+  // assume q head 64  k head 1,  head_dim is 128,  rope_head_dim is first 64
+
+  int64_t* seq_lens_cpu = (int64_t*)seq_lens_cpu_addr;
+  int64_t seq_lens_kernel[8] = {0};
+  for (int b = 0; b < batch_num; b++)
+  {
+    int cur_seq_len = seq_lens_cpu[b];
+    seq_lens_kernel[b] = cur_seq_len;
+  }
+
+  sycl::range<2> GlobalRange(batch_num, 64 + 1);
+  sycl::range<2> LocalRange(1, 1);
+  sycl::nd_range<2> Range(GlobalRange, LocalRange);
+
+  dpcpp_queue.submit([&](handler& cgh) {
+    cgh.parallel_for(
+      Range, [=](nd_item<2> ndi) SYCL_ESIMD_KERNEL {
+
+        int hid = ndi.get_group(1);
+        int bid = ndi.get_group(0);
+
+        uint8_t *input_ptr = query;
+        int input_offset = bid * 64 * 128 + hid * 128;
+        int output_offset = input_offset;
+        int output_scale_offset = bid * 64 + hid;
+        int kcache_offset_intoken = (tbo_start_batch_idx + bid) * tokens_per_batch + seq_lens_kernel[bid] - 1;
+        bool isK = (hid == 64);
+        if (isK) // is K
+        {
+          input_ptr = key;
+          input_offset = bid * 128;
+        }
+        simd<float, 128> cur_in = block_load<fp16, 128>((fp16*)input_ptr + input_offset);
+
+        // k norm ------------------------------------------------------
+        if (isK)
+        {
+          simd<float, 128> weight_cur = block_load<float, 128>((float*)knorm_weight);
+          simd<float, 128> bias_cur = block_load<float, 128>((float*)knorm_bias);
+
+          float e_cur = sycl::ext::intel::esimd::detail::sum<float, float, 128>(cur_in) / 128;
+          float v_cur = sycl::ext::intel::esimd::detail::sum<float, float, 128>(cur_in * cur_in) / 128;
+          float scale_norm = rsqrt<float, 1>(v_cur + knorm_eps);
+
+          cur_in = cur_in - e_cur;
+          cur_in = cur_in * scale_norm;
+          cur_in = cur_in * weight_cur + bias_cur;
+        }
+
+        // q k rope ----------------------------------------------------
+
+        uint64_t positions_index = ((uint64_t*)positions)[bid];
+        unsigned int offsetCosSin = positions_index * 64;
+        
+        simd<fp16, 64> input_rotate_half;
+        simd<fp16, 64> cos_value;
+        simd<fp16, 64> sin_value;
+        simd<fp16, 64> cos_sin_value = block_load<fp16, 64>((fp16*)cos_sin_cache + offsetCosSin);
+
+        cos_value.select<32, 2>(0) = cos_sin_value.select<32, 1>(0);
+        cos_value.select<32, 2>(1) = cos_sin_value.select<32, 1>(0);
+        sin_value.select<32, 2>(0) = cos_sin_value.select<32, 1>(32);
+        sin_value.select<32, 2>(1) = cos_sin_value.select<32, 1>(32);
+
+        input_rotate_half.select<32, 2>(1) = cur_in.select<32, 2>(0);
+        input_rotate_half.select<32, 2>(0) = cur_in.select<32, 2>(1) * -1.0;
+
+        cur_in.template select<64, 1>(0) = cur_in.template select<64, 1>(0) * cos_value + input_rotate_half * sin_value;
+
+        // q k quant ---------------------------------------------------
+
+        float max_abs = hmax<float, float, 128>(abs<float, 128>(cur_in));
+        float cur_scales = max_abs / 127;
+        float iscales = (cur_scales != 0.0f) ? 1 / cur_scales : 0.0f;
+        simd<int8_t, 128> cur_out = rnde<int8_t, 128>(cur_in * iscales);
+        cur_out = clamp<int8_t, 128>(cur_out, -128, 127);
+
+        // write out ---------------------------------------------------
+        
+        if (isK)
+        {
+          block_store<int8_t, 128>((int8_t*)k_cache + kcache_offset_intoken * 128, cur_out);
+          block_store<fp16, 1>((fp16*)k_scale + kcache_offset_intoken, cur_scales);
+        }
+        else
+        {
+          block_store<int8_t, 128>((int8_t*)query_out + output_offset, cur_out);
+          block_store<fp16, 1>((fp16*)q_scale + output_scale_offset, cur_scales);
+        }
+
+      });
+  });
+
+}
+
+inline void esimd_weight_qscale_fuse(
+  uint8_t* hidden_states, uint8_t* weights, uint8_t* q_scale, uint8_t* output,
+  int64_t input_len,
+  float softmax_scale,
+
+  sycl::queue& dpcpp_queue)
+{
+  // DSA
+  // hidden_states * weight * q_scale * softmax_scale
+  // weights.unsqueeze(-1) * q_scale.unsqueeze(-1) * self.softmax_scale
+  // template<typename IT, uint32_t NT, uint32_t HD, uint32_t PPG, uint32_t MAX_INPUT_M>
+  // assume K is 7168  N is 64  M is input_len  batch is 1  has_bias is 0
+  if (input_len == 1)
+  {
+    GEMV_a16_wfp16_block<fp16, 28, 256, 1, 1>(
+      hidden_states, weights, nullptr, q_scale, output, input_len, 64, 7168, 1, 0, softmax_scale, dpcpp_queue
+    );
+  }
+  else if (input_len == 2)
+  {
+    GEMV_a16_wfp16_block<fp16, 28, 256, 1, 2>(
+      hidden_states, weights, nullptr, q_scale, output, input_len, 64, 7168, 1, 0, softmax_scale, dpcpp_queue
+    );
+  }
+  else if (input_len <= 4)
+  {
+    GEMV_a16_wfp16_block<fp16, 28, 256, 1, 4>(
+      hidden_states, weights, nullptr, q_scale, output, input_len, 64, 7168, 1, 0, softmax_scale, dpcpp_queue
+    );
+  }
+  else if (input_len <= 8)
+  {
+    GEMV_a16_wfp16_block<fp16, 28, 256, 1, 8>(
+      hidden_states, weights, nullptr, q_scale, output, input_len, 64, 7168, 1, 0, softmax_scale, dpcpp_queue
+    );
+  }
+
+}
+
+
+inline void esimd_kernel_dsa_qk_attn(
+    uint8_t* query,    // [b, 64, 128]
+    uint8_t* k_cache,  // [b, k_cache_batch_stride, 128]
+    uint8_t* k_scale,  // [b, k_cache_batch_stride]
+    uint8_t* weights,  // [b, 1, 64]
+    uint8_t* index_score_rsv,
+    int64_t batch_num,
+    int64_t k_cache_batch_stride,
+    int64_t seq_lens_cpu_addr,  // [3260, 5136,   10,  778]
+sycl::queue& dpcpp_queue)
+{
+  // assume q heads 64   k head 1    head_dim is 128
+  int64_t* seq_lens_cpu = (int64_t*)seq_lens_cpu_addr;
+
+  int64_t seq_lens_kernel[8] = {0};
+  int64_t k8_num_start_kernel[9] = {0};
+
+  int k8_num_cumsum = 0;
+  for (int b = 0; b < batch_num; b++)
+  {
+    int cur_seq_len = seq_lens_cpu[b];
+    int cur_k8_num = (cur_seq_len + 7) / 8;
+    k8_num_start_kernel[b] = k8_num_cumsum;
+    k8_num_cumsum += cur_k8_num;
+    seq_lens_kernel[b] = cur_seq_len;
+
+    // printf("cur_seq_len = %d\n", cur_seq_len);
+    // printf("cur_k8_num = %d\n", cur_k8_num);
+    // printf("k8_num_start_kernel[%d] = %d\n", b, k8_num_start_kernel[b]);
+  }
+  k8_num_start_kernel[batch_num] = k8_num_cumsum;
+
+  // printf("k8_num_cumsum = %d\n", k8_num_cumsum);
+
+  sycl::range<1> GlobalRange(k8_num_cumsum);
+  sycl::range<1> LocalRange(1);
+  sycl::nd_range<1> Range(GlobalRange, LocalRange);
+
+  dpcpp_queue.submit([&](handler& cgh) {
+    cgh.parallel_for(
+      Range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
+
+        int gid = ndi.get_group(0);
+
+        constexpr int index_score_rsv_stride = 163840;
+
+        int cur_batch = 0;
+        bool isLast = false;
+        for (int b = 1; b < batch_num+1; b++)
+        {
+          if (gid < k8_num_start_kernel[b])
+          {
+            if (gid == k8_num_start_kernel[b] - 1)
+            {
+              isLast = true;
+            }
+
+            gid = gid - k8_num_start_kernel[b-1];
+            break;
+          } 
+          cur_batch++;
+        }
+        
+        // q [b, 64, 128] => [b, 4, 16, 128] => [b, 4, 16, 4, 32] => [b, 4, 4(-), _16, 32_]  16x32 VNNI
+        // k [b, k_cache_batch_stride, 128] => [b, cur_seq_len, 128] => [b, cur_seq_len / 8, 8, 128] => [b, k8_num, 8, 128]
+        // => [b, k8_num, 8, 4, 32] => => [b, k8_num, 4, 8, 32] => [b, k8_num, 4(-), _8, 32_]  8x16 2D
+        // o [b, k8_num, 8, 64] => o [b, k8_num, 8, 4, 16]  => o [b, k8_num, 4, _8, 16_]
+
+        // k scale len 8
+        // o dequant and shuffle back to [b, k8_num, 8, 4, 16] => [b, k8_num, 8, 64]
+        // weight [b, 64]
+        // o relu and * weight and sum [b, k8_num, 8] => write out
+
+        // simd<int8_t, 4*4*16*32> q_cur;
+        simd<int8_t, 4*16*32> q_cur;
+        simd<int8_t, 4*8*32> k_cur;
+        simd<float, 8> k_scale_cur = block_load<fp16, 8>((fp16*)k_scale + cur_batch * k_cache_batch_stride + gid * 8);
+        simd<fp16, 64> weight_cur = block_load<fp16, 64>((fp16*)weights + cur_batch * 64);
+        simd<int32_t, 4*8*16> o_int_cur;
+        simd<fp16, 8*4*16> o_cur;  // should be dequant and shuffled
+        simd<fp16, 8> o_final;
+
+        int64_t q_base_offset = (cur_batch * 64 * 128) * sizeof(int8_t);
+        simd<uint32_t, 16> gather_offset(q_base_offset, 128*sizeof(int8_t));
+
+        // #pragma unroll
+        // for (int i = 0; i < 4; i++)
+        // {
+        //   #pragma unroll
+        //   for (int k = 0; k < 4; k++)
+        //   {
+        //     q_cur.template bit_cast_view<uint32_t>().template select<16*32/4, 1>(i*4*16*32/4 + k*16*32/4) =
+        //     __ESIMD_ENS::lsc_gather<
+        //     uint32_t,
+        //     8,
+        //     __ESIMD_ENS::lsc_data_size::u32,
+        //     __ESIMD_ENS::cache_hint::cached,
+        //     __ESIMD_ENS::cache_hint::cached,
+        //     16,
+        //     uint32_t
+        //     >((uint32_t*)query, gather_offset + (i*16*128 + k*32) * sizeof(int8_t));
+        //   }
+        // }
+
+        int64_t k_base_offset = (cur_batch * k_cache_batch_stride * 128 + gid * 8 * 128) * sizeof(int8_t);
+        #pragma unroll
+        for (int k = 0; k < 4; k++)
+        {
+          k_cur.template select<32*8, 1>(k*32*8) = __ESIMD_ENS::lsc_load_2d<
+            int8_t, 32, 8, 1,  //32x8
+            false, false,
+            __ESIMD_ENS::cache_hint::cached,
+            __ESIMD_ENS::cache_hint::cached>((int8_t*)k_cache + k_base_offset,
+                128 - 1, 8 - 1, 128 - 1,
+                k * 32, // X cord
+                0);  // Y cord
+        }
+        
+        #pragma unroll
+        for (int i = 0; i < 4; i++)
+        {
+          simd<int32_t, 8*16> cc_xmx{0};
+
+          #pragma unroll
+          for (int k = 0; k < 4; k++)
+          {
+            q_cur.template bit_cast_view<uint32_t>().template select<16*32/4, 1>(k*16*32/4) =
+              __ESIMD_ENS::lsc_gather<
+              uint32_t,
+              8,
+              __ESIMD_ENS::lsc_data_size::u32,
+              __ESIMD_ENS::cache_hint::cached,
+              __ESIMD_ENS::cache_hint::cached,
+              16,
+              uint32_t
+              >((uint32_t*)query, gather_offset + (i*16*128 + k*32) * sizeof(int8_t));
+          }
+
+          #pragma unroll
+          for (int k = 0; k < 4; k++)
+          {
+            // dpas
+            simd<int8_t, 8*32> bb_xmx{0};
+            simd<int8_t, 16*32> aa_xmx{0};
+
+            bb_xmx = k_cur.template select<8*32,1>(k*8*32);
+            aa_xmx = q_cur.template select<16*32, 1>(k*16*32);
+            cc_xmx = sycl::ext::intel::esimd::xmx::dpas<8, 8, int32_t, int32_t, int8_t, int8_t>(cc_xmx, aa_xmx, bb_xmx);
+          }
+          o_int_cur.template select<8*16,1>(i*8*16) = cc_xmx;
+        }
+
+        // dequant and shuffle to [b, k8_num, 8, 4, 16]
+        #pragma unroll
+        for (int i = 0; i < 4; i++)
+        {
+          #pragma unroll
+          for (int j = 0; j < 8; j++)
+          {
+            simd<float, 16> o_temp = o_int_cur.template select<16,1>(i*8*16 + j*16);
+            o_temp.template select<16,1>(0) = o_temp.template select<16,1>(0) * k_scale_cur[j];
+            o_cur.template select<16,1>(i*16 + j*4*16) = o_temp;
+          }
+        }
+
+        // #pragma unroll
+        // for (int j = 0; j < 8; j++)
+        // {
+        //   simd<fp16, 64> o_final2 = o_cur.template select<64, 1>(64*j);
+        //   block_store<fp16, 64>((fp16*)index_score_rsv + gid * 8 * 64 + 64*j, o_final2);
+        // }
+
+        // relu and * weight and sum
+        #pragma unroll
+        for (int j = 0; j < 8; j++)
+        {
+          simd<fp16, 64> o_temp = o_cur.template select<64,1>(j*64);
+          simd_mask<64> mask = o_temp > 0;
+          o_temp.merge(o_temp, 0, mask);
+          o_final[j] = sycl::ext::intel::esimd::reduce<fp16, fp16, 64, std::plus<>>(
+            o_temp * weight_cur, std::plus<>());
+        }
+ 
+        int cur_seq_len = seq_lens_kernel[cur_batch];
+        int cur_rest = cur_seq_len % 8;
+        int last_k_num = 8;
+        if (isLast && cur_rest != 0)
+        {
+          last_k_num = cur_rest;
+
+          for (int i = 0; i < last_k_num; i++)
+          {
+            block_store<fp16, 1>((fp16*)index_score_rsv + gid * 8 + cur_batch * index_score_rsv_stride + i, o_final[i]);
+          }
+        }
+        else
+        {
+          block_store<fp16, 8>((fp16*)index_score_rsv + gid * 8 + cur_batch * index_score_rsv_stride, o_final);
+        }
+      });
+  });
+
 
 }
 
@@ -1878,11 +2237,20 @@ at::Tensor esimd_kernel_uni(
         case 3322:
           esimd_topk(p0, p1, p2, p3, p4, p5, p6, p7, p8, i1, i2, dpcpp_queue);
         break;
+        case 4004:
+          esimd_kernel_dsa_qk_attn(p0, p1, p2, p3, p4, i1, i2, i3, dpcpp_queue);
+        break;
         case 3311:
           esimd_topk_multi_round(p0, p1, p2, p3, p4, p5, i1, i2, i3, i4, i5, dpcpp_queue);
         break;
         case 3777:
           esimd_update_kv_dsa_index(p0, p1, p2, p3, p4, i1, dpcpp_queue);
+        break;
+        case 3991:
+          esimd_rope_quant_updatek(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, i1, i2, i3, i4, f0, dpcpp_queue);
+        break;
+        case 3876:
+          esimd_weight_qscale_fuse(p0, p1, p2, p3, i1, f0, dpcpp_queue);
         break;
         default:
           printf("---------- esimd kernel op not supported, op is %lld ----------\n", i0);
@@ -2047,6 +2415,201 @@ at::Tensor esimd_kernel_uni_large_params(
           esimd_mla_mega(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17,
           i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, i11, i12, i13, i14,
           f0, f1, f2, f3, dpcpp_queue);
+        break;
+        default:
+          printf("---------- esimd kernel op not supported, op is %lld ----------\n", i0);
+        break;
+      }
+      return _p9;
+    }
+
+
+inline void esimd_dsa_mega(
+    uint8_t* x,
+    uint8_t* q_lora,
+    uint8_t* w_qb_weight,
+    uint8_t* w_qb_scale,
+    uint8_t* wk_weight,
+    uint8_t* wk_scale,
+    uint8_t* query,  // temp fp16
+    uint8_t* key,   // temp fp16
+    uint8_t* knorm_weight,
+    uint8_t* knorm_bias,
+    uint8_t* cos_sin_cache,
+    uint8_t* positions,
+    uint8_t* k_cache,  // cache int8
+    uint8_t* k_scale,  // cache fp16
+    uint8_t* query_out,  // temp int8
+    uint8_t* q_scale,  // temp fp16
+    uint8_t* weights,  // temp fp16
+    uint8_t* weights_proj_weight,
+    uint8_t* topk_indices_final,
+    uint8_t* index_score_rsv,
+    uint8_t* out_idx,
+    uint8_t* out_ordered,
+    uint8_t* kv_indptr,
+    uint8_t* kv_indices,
+    uint8_t* kv_indptr_updated,
+    uint8_t* kv_indices_new,
+    
+    int64_t batch_num,  // aka input_len
+    int64_t max_q_len,
+    int64_t tbo_start_batch_idx,
+    int64_t seq_lens_cpu_addr,
+    int64_t tokens_per_batch,
+    int64_t total_count_stride,
+    int64_t real_total_count_reserved,
+    int64_t groups,
+    
+    float knorm_eps,
+    float softmax_scale,
+    sycl::queue& dpcpp_queue)
+{
+  // handle aka
+  int64_t real_total_count = max_q_len;
+  int64_t k_cache_batch_stride = tokens_per_batch;
+  uint8_t* topk_indices = topk_indices_final;
+  int64_t input_len = batch_num;
+
+  // assume self.q_lora_rank is 1536
+  // self.n_heads * self.head_dim = 64 * 128
+  int64_t M = batch_num;
+  int64_t N = 64 * 128;
+  int64_t K = 1536;
+  GEMV_a16_wfp8_block_host(
+    q_lora, w_qb_weight, w_qb_scale, nullptr, query,  // out
+    M, N, K, 1, // no real batch dim
+    128, 128, 0, // no bias
+    dpcpp_queue);
+
+  // assume self.hidden_size = 7168
+  // assume self.head_dim = 128
+  M = batch_num;
+  N = 128;
+  K = 7168;
+  GEMV_a16_wfp8_block_host(
+    x, wk_weight, wk_scale, nullptr, key,  // out
+    M, N, K, 1, // no real batch dim
+    128, 128, 0, // no bias
+    dpcpp_queue);
+
+  esimd_rope_quant_updatek(
+    query, key, knorm_weight, knorm_bias, positions, cos_sin_cache, query_out, q_scale, k_cache, k_scale,
+    seq_lens_cpu_addr, tbo_start_batch_idx, tokens_per_batch, batch_num, knorm_eps,
+    dpcpp_queue);
+
+  esimd_weight_qscale_fuse(
+    x, weights_proj_weight, q_scale, weights, input_len, softmax_scale,
+    dpcpp_queue);
+
+  uint8_t* index_score_rsv_sub = index_score_rsv + tbo_start_batch_idx * real_total_count_reserved * sizeof(fp16);
+  esimd_kernel_dsa_qk_attn(
+    query_out, k_cache, k_scale, weights, index_score_rsv_sub,
+    batch_num, k_cache_batch_stride, seq_lens_cpu_addr,
+    dpcpp_queue);
+
+  // assume topk 2048
+  esimd_topk_multi_round(
+    index_score_rsv_sub,
+    index_score_rsv_sub, // not used
+    out_ordered, // tmp
+    out_idx,  // tmp
+    out_ordered,  // not used
+    topk_indices_final,
+    total_count_stride,
+    groups, // RCOUNT
+    2048, // topk
+    0, // output_final_out,
+    batch_num,
+    dpcpp_queue);
+
+  esimd_update_kv_dsa_index(
+    kv_indptr, kv_indices, topk_indices, kv_indptr_updated, kv_indices_new, batch_num,
+    dpcpp_queue);
+
+}
+
+at::Tensor esimd_kernel_uni_huge_params(
+    at::Tensor _p0,
+    at::Tensor _p1,
+    at::Tensor _p2,
+    at::Tensor _p3,
+    at::Tensor _p4,
+    at::Tensor _p5,
+    at::Tensor _p6,
+    at::Tensor _p7,
+    at::Tensor _p8,
+    at::Tensor _p9,
+    at::Tensor _p10,
+    at::Tensor _p11,
+    at::Tensor _p12,
+    at::Tensor _p13,
+    at::Tensor _p14,
+    at::Tensor _p15,
+    at::Tensor _p16,
+    at::Tensor _p17,
+    at::Tensor _p18,
+    at::Tensor _p19,
+    at::Tensor _p20,
+    at::Tensor _p21,
+    at::Tensor _p22,
+    at::Tensor _p23,
+    at::Tensor _p24,
+    at::Tensor _p25,
+
+    int64_t i0,
+    int64_t i1,
+    int64_t i2,
+    int64_t i3,
+    int64_t i4,
+    int64_t i5,
+    int64_t i6,
+    int64_t i7,
+    int64_t i8,
+    int64_t i9,
+
+    double f0,
+    double f1,
+    double f2,
+    double f3,
+    double f4
+    )
+    {
+    auto p0 = reinterpret_cast<uint8_t*>(_p0.data_ptr());
+    auto p1 = reinterpret_cast<uint8_t*>(_p1.data_ptr());
+    auto p2 = reinterpret_cast<uint8_t*>(_p2.data_ptr());
+    auto p3 = reinterpret_cast<uint8_t*>(_p3.data_ptr());
+    auto p4 = reinterpret_cast<uint8_t*>(_p4.data_ptr());
+    auto p5 = reinterpret_cast<uint8_t*>(_p5.data_ptr());
+    auto p6 = reinterpret_cast<uint8_t*>(_p6.data_ptr());
+    auto p7 = reinterpret_cast<uint8_t*>(_p7.data_ptr());
+    auto p8 = reinterpret_cast<uint8_t*>(_p8.data_ptr());
+    auto p9 = reinterpret_cast<uint8_t*>(_p9.data_ptr());
+    auto p10 = reinterpret_cast<uint8_t*>(_p10.data_ptr());
+    auto p11 = reinterpret_cast<uint8_t*>(_p11.data_ptr());
+    auto p12 = reinterpret_cast<uint8_t*>(_p12.data_ptr());
+    auto p13 = reinterpret_cast<uint8_t*>(_p13.data_ptr());
+    auto p14 = reinterpret_cast<uint8_t*>(_p14.data_ptr());
+    auto p15 = reinterpret_cast<uint8_t*>(_p15.data_ptr());
+    auto p16 = reinterpret_cast<uint8_t*>(_p16.data_ptr());
+    auto p17 = reinterpret_cast<uint8_t*>(_p17.data_ptr());
+    auto p18 = reinterpret_cast<uint8_t*>(_p18.data_ptr());
+    auto p19 = reinterpret_cast<uint8_t*>(_p19.data_ptr());
+    auto p20 = reinterpret_cast<uint8_t*>(_p20.data_ptr());
+    auto p21 = reinterpret_cast<uint8_t*>(_p21.data_ptr());
+    auto p22 = reinterpret_cast<uint8_t*>(_p22.data_ptr());
+    auto p23 = reinterpret_cast<uint8_t*>(_p23.data_ptr());
+    auto p24 = reinterpret_cast<uint8_t*>(_p24.data_ptr());
+    auto p25 = reinterpret_cast<uint8_t*>(_p25.data_ptr());
+    auto stream = at::xpu::getCurrentXPUStream();
+    auto dpcpp_queue = stream.queue();
+
+      switch(i0){
+        case 2000:
+          esimd_dsa_mega(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, 
+            p13, p14, p15, p16, p17, p18, p19, p20, p21, p22, p23, p24, p25,
+            i1, i2, i3, i4, i5, i6, i7, i8,
+            f0, f1, dpcpp_queue);
         break;
         default:
           printf("---------- esimd kernel op not supported, op is %lld ----------\n", i0);

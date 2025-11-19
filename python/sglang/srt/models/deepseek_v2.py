@@ -1751,26 +1751,8 @@ class DeepseekV2AttentionMLA(nn.Module):
             end_offset = start_offset + seq_len * self.hidden_size
             hidden_states = results.flatten()[start_offset:end_offset].view(seq_len, -1)
 
-        topk_indices = None
-        if q_lora is not None:
-            if not hasattr(forward_batch, "topk_indices"):
-                forward_batch.topk_indices = None
-            topk_indices = self.indexer(
-                x=hidden_states,
-                q_lora=q_lora,
-                positions=positions,
-                forward_batch=forward_batch,
-                layer_id=self.layer_id,
-            )
-            # print(topk_indices)
-            # print(topk_indices.shape)
-            # memGB = torch.xpu.memory_allocated(device=hidden_states.device) / 1024 / 1024 / 1024
-            # print("mem allocated: ", memGB, "GB")
-            forward_batch.topk_indices = topk_indices
-            # breakpoint()
-
-        #set_kv_buffer + sdpa  -> submit in triton_backend.py
-        if forward_batch.forward_mode.is_decode():
+        opt_dsa_mega = True
+        if opt_dsa_mega and forward_batch.forward_mode.is_decode():
             if is_tbo:
                 backend = forward_batch.attn_backend.primary
             else:
@@ -1782,89 +1764,141 @@ class DeepseekV2AttentionMLA(nn.Module):
             else:
                 kv_indptr = backend.forward_metadata.kv_indptr
                 kv_indices = backend.forward_metadata.kv_indices
+
+            kv_indptr, kv_indices = self.indexer.mega_dsa_forward(
+                hidden_states, q_lora, positions, kv_indptr, kv_indices, forward_batch)
             
-            if hasattr(forward_batch, "topk_indices") and forward_batch.topk_indices is not None:
-                update_kv_dsa_index_fuse = True
-
-                start_offset = 0
-                kv_indptr_updated = kv_indptr.clone()
-                if update_kv_dsa_index_fuse is True:
-                    kv_indices_new = torch.zeros(forward_batch.batch_size * 2048, device=kv_indices.device, dtype=kv_indices.dtype)
-                    esimd_kernel_uni(
-                        kv_indptr, 
-                        kv_indices, 
-                        forward_batch.topk_indices,
-                        kv_indptr_updated, 
-                        kv_indices_new, 
-                        kv_indptr_updated, kv_indptr_updated, kv_indptr_updated, kv_indptr_updated, kv_indptr_updated,
-                        3777,
-                        forward_batch.batch_size,
-                        0, 0, 0, 0, 0, 0, 0, 0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                    )
-                else:
-                    for i in range(forward_batch.batch_size):
-                        
-                        kvlen = kv_indptr[i+1] - kv_indptr[i]
-                        if kvlen > 2048:
-                            kvlen_new = 2048  # update kv_indptr
-                            
-                            start_offset += kvlen_new
-                        else:
-                            start_offset += kvlen
-
-                        kv_indptr_updated[i+1] = start_offset
-                    
-                    kv_indices_new = torch.zeros(start_offset, device=kv_indices.device, dtype=kv_indices.dtype)
-
-                    for i in range(forward_batch.batch_size):
-                        kvlen = kv_indptr_updated[i+1] - kv_indptr_updated[i]
-                        if kvlen >= 2048:
-                            kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]][forward_batch.topk_indices[i].to(torch.int64)]
-                        else:
-                            kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]]
-
-                kv_indptr = kv_indptr_updated
-                kv_indices = kv_indices_new
-                # print("kv_indices updated: ", kv_indices, kv_indices.shape)
-                                   
             B = kv_indptr.shape[0] - 1
 
             attn_output = torch.empty(q_out.shape[0], q_out.shape[1], k_nope.shape[-1] , device=hidden_states.device, dtype=hidden_states.dtype)
             sdp_tmp = torch.empty(q_out.shape[-2], 512, k_nope.shape[-1], device=hidden_states.device, dtype=torch.float32) # max to alloc 
 
             layer_id = self.attn_mqa.layer_id
-            if 0:
-                # forward_batch.token_to_kv_pool.set_kv_buffer(
-                #     self.attn_mqa, forward_batch.out_cache_loc, k_out, k_nope
-                #     )
-                esimd_kernel_uni(
-                    forward_batch.token_to_kv_pool.get_key_buffer(layer_id), forward_batch.out_cache_loc, k_out, 
-                    k_out, k_out, k_out, k_out, k_out, k_out, k_out,
-                    1112, k_out.shape[-1], k_out.stride()[0], forward_batch.out_cache_loc.shape[0], 
-                    1, 1, 1, 1, 1, 1, 1.0, 1.0, 1.0, 1.0, 1.0)
-                    
-                for batch_idx in range(B):  # B
+            esimd_kernel_uni(
+                forward_batch.out_cache_loc,
+                k_out,
+                q_out, 
+                forward_batch.token_to_kv_pool.get_key_buffer(layer_id),
+                forward_batch.token_to_kv_pool.get_value_buffer(layer_id),
+                kv_indptr, kv_indices, sdp_tmp, attn_output,attn_output,
+                1014, q_out.shape[-2], k_out.shape[-2], B,  k_out.shape[-1], k_nope.shape[-1], 
+                k_out.shape[-1], k_out.stride()[0], forward_batch.out_cache_loc.shape[0], 0,    
+                self.attn_mqa.scaling, 1.0, 1.0, 1.0, 1.0)
+        else:
+            topk_indices = None
+            if q_lora is not None:
+                if not hasattr(forward_batch, "topk_indices"):
+                    forward_batch.topk_indices = None
+                topk_indices = self.indexer(
+                    x=hidden_states,
+                    q_lora=q_lora,
+                    positions=positions,
+                    forward_batch=forward_batch,
+                    layer_id=self.layer_id,
+                )
+                # print(topk_indices)
+                # print(topk_indices.shape)
+                # memGB = torch.xpu.memory_allocated(device=hidden_states.device) / 1024 / 1024 / 1024
+                # print("mem allocated: ", memGB, "GB")
+                forward_batch.topk_indices = topk_indices
+                # breakpoint()
+
+            #set_kv_buffer + sdpa  -> submit in triton_backend.py
+            if forward_batch.forward_mode.is_decode():
+                if is_tbo:
+                    backend = forward_batch.attn_backend.primary
+                else:
+                    backend = forward_batch.attn_backend
+                
+                if self.attn_mqa.sliding_window_size is not None and self.attn_mqa.sliding_window_size > -1:
+                    kv_indptr = backend.forward_metadata.window_kv_indptr
+                    kv_indices = backend.forward_metadata.window_kv_indices
+                else:
+                    kv_indptr = backend.forward_metadata.kv_indptr
+                    kv_indices = backend.forward_metadata.kv_indices
+                
+                if hasattr(forward_batch, "topk_indices") and forward_batch.topk_indices is not None:
+                    update_kv_dsa_index_fuse = True
+
+                    start_offset = 0
+                    kv_indptr_updated = torch.empty_like(kv_indptr) #kv_indptr.clone()
+                    if update_kv_dsa_index_fuse is True:
+                        kv_indices_new = torch.empty(forward_batch.batch_size * 2048, device=kv_indices.device, dtype=kv_indices.dtype)
+                        esimd_kernel_uni(
+                            kv_indptr, 
+                            kv_indices, 
+                            forward_batch.topk_indices,
+                            kv_indptr_updated, 
+                            kv_indices_new, 
+                            kv_indptr_updated, kv_indptr_updated, kv_indptr_updated, kv_indptr_updated, kv_indptr_updated,
+                            3777,
+                            forward_batch.batch_size,
+                            0, 0, 0, 0, 0, 0, 0, 0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                        )
+                    else:
+                        for i in range(forward_batch.batch_size):
+                            
+                            kvlen = kv_indptr[i+1] - kv_indptr[i]
+                            if kvlen > 2048:
+                                kvlen_new = 2048  # update kv_indptr
+                                
+                                start_offset += kvlen_new
+                            else:
+                                start_offset += kvlen
+
+                            kv_indptr_updated[i+1] = start_offset
+                        
+                        kv_indices_new = torch.zeros(start_offset, device=kv_indices.device, dtype=kv_indices.dtype)
+
+                        for i in range(forward_batch.batch_size):
+                            kvlen = kv_indptr_updated[i+1] - kv_indptr_updated[i]
+                            if kvlen >= 2048:
+                                kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]][forward_batch.topk_indices[i].to(torch.int64)]
+                            else:
+                                kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]]
+
+                    kv_indptr = kv_indptr_updated
+                    kv_indices = kv_indices_new
+                    # print("kv_indices updated: ", kv_indices, kv_indices.shape)
+                                   
+                B = kv_indptr.shape[0] - 1
+
+                attn_output = torch.empty(q_out.shape[0], q_out.shape[1], k_nope.shape[-1] , device=hidden_states.device, dtype=hidden_states.dtype)
+                sdp_tmp = torch.empty(q_out.shape[-2], 512, k_nope.shape[-1], device=hidden_states.device, dtype=torch.float32) # max to alloc 
+
+                layer_id = self.attn_mqa.layer_id
+                if 0:
+                    # forward_batch.token_to_kv_pool.set_kv_buffer(
+                    #     self.attn_mqa, forward_batch.out_cache_loc, k_out, k_nope
+                    #     )
                     esimd_kernel_uni(
+                        forward_batch.token_to_kv_pool.get_key_buffer(layer_id), forward_batch.out_cache_loc, k_out, 
+                        k_out, k_out, k_out, k_out, k_out, k_out, k_out,
+                        1112, k_out.shape[-1], k_out.stride()[0], forward_batch.out_cache_loc.shape[0], 
+                        1, 1, 1, 1, 1, 1, 1.0, 1.0, 1.0, 1.0, 1.0)
+                        
+                    for batch_idx in range(B):  # B
+                        esimd_kernel_uni(
+                            q_out, 
+                            forward_batch.token_to_kv_pool.get_key_buffer(layer_id),
+                            forward_batch.token_to_kv_pool.get_value_buffer(layer_id),
+                            kv_indptr, kv_indices, sdp_tmp, attn_output, attn_output, attn_output, attn_output,
+                            1013, q_out.shape[-2], k_out.shape[-2], batch_idx,  k_out.shape[-1], k_nope.shape[-1], 
+                            0, 0, 0, 0,    
+                            self.attn_mqa.scaling, 1.0, 1.0, 1.0, 1.0)
+                else:
+                    esimd_kernel_uni(
+                        forward_batch.out_cache_loc,
+                        k_out,
                         q_out, 
                         forward_batch.token_to_kv_pool.get_key_buffer(layer_id),
                         forward_batch.token_to_kv_pool.get_value_buffer(layer_id),
-                        kv_indptr, kv_indices, sdp_tmp, attn_output, attn_output, attn_output, attn_output,
-                        1013, q_out.shape[-2], k_out.shape[-2], batch_idx,  k_out.shape[-1], k_nope.shape[-1], 
-                        0, 0, 0, 0,    
+                        kv_indptr, kv_indices, sdp_tmp, attn_output,attn_output,
+                        1014, q_out.shape[-2], k_out.shape[-2], B,  k_out.shape[-1], k_nope.shape[-1], 
+                        k_out.shape[-1], k_out.stride()[0], forward_batch.out_cache_loc.shape[0], 0,    
                         self.attn_mqa.scaling, 1.0, 1.0, 1.0, 1.0)
             else:
-                esimd_kernel_uni(
-                    forward_batch.out_cache_loc,
-                    k_out,
-                    q_out, 
-                    forward_batch.token_to_kv_pool.get_key_buffer(layer_id),
-                    forward_batch.token_to_kv_pool.get_value_buffer(layer_id),
-                    kv_indptr, kv_indices, sdp_tmp, attn_output,attn_output,
-                    1014, q_out.shape[-2], k_out.shape[-2], B,  k_out.shape[-1], k_nope.shape[-1], 
-                    k_out.shape[-1], k_out.stride()[0], forward_batch.out_cache_loc.shape[0], 0,    
-                    self.attn_mqa.scaling, 1.0, 1.0, 1.0, 1.0)
-        else:
-            attn_output = self.attn_mqa(q_out, k_out, k_nope, forward_batch)  
+                attn_output = self.attn_mqa(q_out, k_out, k_nope, forward_batch)  
 
         attn_output = attn_output.view(-1, self.num_local_heads, self.kv_lora_rank)
 
@@ -2727,7 +2761,7 @@ class DeepseekV2Model(nn.Module):
     ) -> None:
         # YC WA
         if enable_6_layer_dbg:
-            config.num_hidden_layers = 6
+            config.num_hidden_layers = 3
         super().__init__()
         self.padding_id = config.pad_token_id
         self.vocab_size = config.vocab_size

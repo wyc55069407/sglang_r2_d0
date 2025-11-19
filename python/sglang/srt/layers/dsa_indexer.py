@@ -16,7 +16,7 @@ from sglang.srt.layers.rotary_embedding import get_rope_wrapper
 from sglang.srt.model_executor.forward_batch_info import ForwardBatch
 from sglang.srt.managers.schedule_batch import global_server_args_dict
 
-from sgl_kernel_esimd import esimd_kernel_uni, esimd_kernel_uni_lgrf
+from sgl_kernel_esimd import esimd_kernel_uni, esimd_kernel_uni_huge_params
 
 # COPIED FROM DeepGEMM
 def ceil_div(x: int, y: int) -> int:
@@ -89,6 +89,20 @@ class V32LayerNorm(nn.Module):
         self.bias = nn.Parameter(torch.zeros(dim, dtype=torch.float32))
 
     def forward(self, x: torch.Tensor):
+
+        orig_dtype = x.dtype
+        x = x.to(torch.float32)
+        x_mean = x.mean(dim=-1, keepdim=True)
+        variance = x.pow(2).mean(dim=-1, keepdim=True)
+        x = (x - x_mean) * torch.rsqrt(variance + self.eps)
+        
+        if self.bias is not None:
+            x = (x * self.weight + self.bias.to(torch.float32)).to(orig_dtype)
+        else:
+            x = (x * self.weight).to(orig_dtype)
+
+        return x
+        
         return F.layer_norm(
             x.float(), (self.dim,), self.weight, self.bias, self.eps
         ).type_as(x)
@@ -275,6 +289,108 @@ class Indexer(CustomOp):
         # breakpoint()
 
         # return query, key
+    
+    def mega_dsa_forward(self, x, q_lora, positions, kv_indptr, kv_indices, forward_batch):
+
+        kv_indptr_updated = torch.empty_like(kv_indptr)
+        kv_indices_new = torch.empty(forward_batch.batch_size * 2048, device=kv_indices.device, dtype=kv_indices.dtype)
+        
+        max_q_len = 0
+        for i in range(forward_batch.batch_size):
+            seq_len = forward_batch.seq_lens_cpu[i].item()
+            if seq_len > max_q_len:
+                max_q_len = seq_len
+        forward_batch.tbo_start_batch_idx = 0
+        if forward_batch.req_pool_indices.shape[0] != self.k_cache.shape[0]:
+            forward_batch.tbo_start_batch_idx = forward_batch.req_pool_indices_cpu[0].item()
+        seq_lens_cpu_addr = forward_batch.seq_lens_cpu.data_ptr()
+
+        knorm_weight = self.k_norm.weight
+        knorm_bias = self.k_norm.bias
+        knorm_eps = self.k_norm.eps
+        tokens_per_batch = self.k_cache.shape[1]
+        cos_sin_cache = self.rotary_emb.cos_sin_cache
+        k_cache_out = self.k_cache
+        k_scale_out = self.k_scale
+
+        real_total_count = max_q_len
+        groups = 1
+        if real_total_count > 20480:
+            groups = 4
+        if real_total_count > 30720:
+            groups = 6
+        if real_total_count > 40960:
+            groups = 8
+        if real_total_count > 51200:
+            groups = 10
+        total_count_stride = ((real_total_count // groups) + 4095) // 4096 * 4096
+
+        global out_idx
+        global out_ordered
+        topk = self.index_topk
+        if out_idx is None:
+            out_ordered = torch.zeros(8, 10, topk, device=x.device, dtype=torch.float16)
+            out_idx = torch.zeros(8, 10, topk, device=x.device, dtype=torch.uint32)
+        global topk_indices_final
+        if topk_indices_final is None:
+            # assume max batch is 8
+            topk_indices_final = torch.zeros(8, topk, device=x.device, dtype=torch.uint32)
+        
+        global index_score_rsv
+        if index_score_rsv is None:
+            index_score_rsv = torch.zeros(8, real_total_count_reserved, device=x.device, dtype=torch.float16) - 65504
+
+        batch_num = forward_batch.batch_size
+        query = torch.empty(batch_num, self.n_heads, self.head_dim, device=x.device, dtype=torch.float16)
+        key = torch.empty(batch_num, self.head_dim, device=x.device, dtype=torch.float16)
+        
+        query_out = torch.empty(query.shape, device=query.device, dtype=torch.int8)
+        q_scale = torch.empty(query.shape[0], query.shape[1], device=query.device, dtype=torch.float16)
+
+        weights = torch.empty(q_scale.shape[0], self.weights_proj.weight.shape[0], device=x.device, dtype=x.dtype)
+
+        esimd_kernel_uni_huge_params(
+            x,
+            q_lora,
+            self.wq_b.weight,
+            self.wq_b.weight_scale_inv,
+            self.wk.weight,
+            self.wk.weight_scale_inv,
+            query,
+            key,
+            knorm_weight,
+            knorm_bias,
+            cos_sin_cache,
+            positions,
+            k_cache_out,
+            k_scale_out,
+            query_out,
+            q_scale,
+            weights,
+            self.weights_proj.weight,
+            topk_indices_final,
+            index_score_rsv,
+            out_idx,
+            out_ordered,
+            kv_indptr,
+            kv_indices,
+            kv_indptr_updated,
+            kv_indices_new,
+            2000,
+            batch_num,
+            max_q_len,
+            forward_batch.tbo_start_batch_idx,
+            seq_lens_cpu_addr,
+            tokens_per_batch,
+            total_count_stride,
+            real_total_count_reserved,
+            groups, 0,
+            knorm_eps,
+            self.softmax_scale, 1.0, 1.0, 1.0
+        )
+
+        return kv_indptr_updated, kv_indices_new
+        
 
     def forward_indexer_bs_1(
         self,
@@ -284,9 +400,6 @@ class Indexer(CustomOp):
         topk: int,
         layer_id: int,
     ) -> Optional[torch.Tensor]:
-
-        assert len(weights.shape) == 3
-        weights = weights.squeeze(-1)
 
         # topk_indices_list = []
         global topk_indices_final
@@ -318,7 +431,7 @@ class Indexer(CustomOp):
             # index_score_rsv_int = torch.zeros(16384, 64, device=query.device, dtype=torch.float16) - 65504
             index_score_rsv_int = index_score_rsv[forward_batch.tbo_start_batch_idx:]
 
-            esimd_kernel_uni_lgrf(
+            esimd_kernel_uni(
                     query,
                     self.k_cache,
                     self.k_scale,
@@ -421,7 +534,7 @@ class Indexer(CustomOp):
             global out_idx
             global out_ordered
             if out_idx is None:
-                out_ordered = torch.zeros(8, 10, topk, device=query.device, dtype=query.dtype)
+                out_ordered = torch.zeros(8, 10, topk, device=query.device, dtype=torch.float16)
                 out_idx = torch.zeros(8, 10, topk, device=query.device, dtype=torch.uint32)
 
             output_final_out = 0
@@ -479,49 +592,138 @@ class Indexer(CustomOp):
         forward_batch: ForwardBatch,
         layer_id: int,
     ) -> Optional[torch.Tensor]:
-        query, key, q_scale, k_scale = self._get_q_k_bf16(q_lora, x, positions)
-
         if not hasattr(self, "k_cache"):
+            k_dtype = x.dtype
+            if self.enable_quant:
+                k_dtype = torch.int8
             # YC WA
             # assume even divide for each batch
             tokens_per_batch = forward_batch.token_to_kv_pool.size // forward_batch.batch_size + forward_batch.batch_size
             print("dsa tokens_per_batch = ", tokens_per_batch)
             self.k_cache = torch.zeros(forward_batch.batch_size, tokens_per_batch, self.head_dim,
-                dtype=key.dtype, device=key.device)
+                dtype=k_dtype, device=x.device)
             self.k_scale = torch.zeros(forward_batch.batch_size, tokens_per_batch, dtype=x.dtype, device=x.device)
         
-        # key = key.reshape(forward_batch.batch_size, key.shape[-3] // forward_batch.batch_size, key.shape[-1])
+        opt_rope_quant_updatek = True
+        if not forward_batch.forward_mode.is_extend() and self.enable_quant and opt_rope_quant_updatek:
+            query, _ = self.wq_b(q_lora)
+            query = rearrange(query, "l (h d) -> l h d", d=self.head_dim)
+            key, _ = self.wk(x)
 
-        key = key.squeeze(-2)
-        k_scale = k_scale.squeeze(-1)
+            forward_batch.tbo_start_batch_idx = 0
+            if forward_batch.req_pool_indices.shape[0] != self.k_cache.shape[0]:
+                forward_batch.tbo_start_batch_idx = forward_batch.req_pool_indices_cpu[0].item()
+            seq_lens_cpu_addr = forward_batch.seq_lens_cpu.data_ptr()
 
-        forward_batch.tbo_start_batch_idx = 0
-        if forward_batch.req_pool_indices.shape[0] != self.k_cache.shape[0]:
-            forward_batch.tbo_start_batch_idx = forward_batch.req_pool_indices_cpu[0].item()
-        # print("forward_batch.tbo_start_batch_idx = ", forward_batch.tbo_start_batch_idx)
+            if True:
+                knorm_weight = self.k_norm.weight
+                knorm_bias = self.k_norm.bias
+                knorm_eps = self.k_norm.eps
+                tokens_per_batch = self.k_cache.shape[1]
+                cos_sin_cache = self.rotary_emb.cos_sin_cache
+                k_cache_out = self.k_cache
+                k_scale_out = self.k_scale
+                query_out = torch.empty(query.shape, device=query.device, dtype=torch.int8)
+                q_scale = torch.empty(query.shape[0], query.shape[1], device=query.device, dtype=torch.float16)
 
-        q_len_start = 0
-        for i in range(forward_batch.batch_size):
-            seq_len = forward_batch.seq_lens_cpu[i].item()
-            q_len = (
-                forward_batch.extend_seq_lens_cpu[i]
-                if forward_batch.forward_mode.is_extend()
-                else 1
-            )
+                esimd_kernel_uni(
+                    query, key,
+                    knorm_weight, knorm_bias,
+                    positions, cos_sin_cache,
+                    query_out, q_scale, k_cache_out, k_scale_out,
+                    3991,
+                    seq_lens_cpu_addr,
+                    forward_batch.tbo_start_batch_idx, 
+                    tokens_per_batch, 
+                    forward_batch.batch_size, 0, 0, 0, 0, 0,
+                    knorm_eps, 1.0, 1.0, 1.0, 1.0,
+                )
+                # breakpoint()
 
-            q_len_end = q_len_start + q_len
+                query = query_out
+            else:
+                # input query 
+                # fuse ----------------------------------
+                q_rope, _ = torch.split(query, [self.rope_head_dim, self.head_dim - self.rope_head_dim], dim=-1)
+                key = self.k_norm(key)
+                key = key.unsqueeze(-2)
+                k_rope, _ = torch.split(
+                    key, [self.rope_head_dim, self.head_dim - self.rope_head_dim], dim=-1
+                )
+                q_rope, k_rope = self.rotary_emb(positions, q_rope, k_rope)
 
-            start_pos = seq_len - q_len
-            end_pos = seq_len
+                query[..., : self.rope_head_dim] = q_rope
+                key[..., : self.rope_head_dim] = k_rope
 
-            ii = i + forward_batch.tbo_start_batch_idx
+                query_q, query_scale = self.oneline_quant(query, self.head_dim)
+                key_q, key_scale = self.oneline_quant(key, self.head_dim)
 
-            self.k_cache[ii:ii+1, start_pos:end_pos] = key[q_len_start:q_len_end]
-            self.k_scale[ii:ii+1, start_pos:end_pos] = k_scale[q_len_start:q_len_end]
+                query = query_q
+                key = key_q
+                q_scale = query_scale
+                k_scale = key_scale
 
-            # print("layer", layer_id, " batch", ii, " dsa: update k at: ", start_pos, "~", end_pos)
+                key = key.squeeze(-2)
+                k_scale = k_scale.squeeze(-1)
 
-            q_len_start = q_len_end
+                q_len_start = 0
+                for i in range(forward_batch.batch_size):
+                    seq_len = forward_batch.seq_lens_cpu[i].item()
+                    q_len = (
+                        forward_batch.extend_seq_lens_cpu[i]
+                        if forward_batch.forward_mode.is_extend()
+                        else 1
+                    )
+
+                    q_len_end = q_len_start + q_len
+
+                    start_pos = seq_len - q_len
+                    end_pos = seq_len
+
+                    ii = i + forward_batch.tbo_start_batch_idx
+
+                    self.k_cache[ii:ii+1, start_pos:end_pos] = key[q_len_start:q_len_end]
+                    self.k_scale[ii:ii+1, start_pos:end_pos] = k_scale[q_len_start:q_len_end]
+
+                    print("layer", layer_id, " batch", ii, " dsa: update k at: ", start_pos, "~", end_pos)
+
+                    q_len_start = q_len_end
+                # fuse ----------------------------------
+
+                breakpoint()
+        else:
+            query, key, q_scale, k_scale = self._get_q_k_bf16(q_lora, x, positions)
+
+            key = key.squeeze(-2)
+            k_scale = k_scale.squeeze(-1)
+
+            forward_batch.tbo_start_batch_idx = 0
+            if forward_batch.req_pool_indices.shape[0] != self.k_cache.shape[0]:
+                forward_batch.tbo_start_batch_idx = forward_batch.req_pool_indices_cpu[0].item()
+            # print("forward_batch.tbo_start_batch_idx = ", forward_batch.tbo_start_batch_idx)
+
+            q_len_start = 0
+            for i in range(forward_batch.batch_size):
+                seq_len = forward_batch.seq_lens_cpu[i].item()
+                q_len = (
+                    forward_batch.extend_seq_lens_cpu[i]
+                    if forward_batch.forward_mode.is_extend()
+                    else 1
+                )
+
+                q_len_end = q_len_start + q_len
+
+                start_pos = seq_len - q_len
+                end_pos = seq_len
+
+                ii = i + forward_batch.tbo_start_batch_idx
+
+                self.k_cache[ii:ii+1, start_pos:end_pos] = key[q_len_start:q_len_end]
+                self.k_scale[ii:ii+1, start_pos:end_pos] = k_scale[q_len_start:q_len_end]
+
+                # print("layer", layer_id, " batch", ii, " dsa: update k at: ", start_pos, "~", end_pos)
+
+                q_len_start = q_len_end
 
         if forward_batch.forward_mode.is_extend():
             global index_score_rsv
@@ -530,10 +732,24 @@ class Indexer(CustomOp):
             # do not cal indexer for prefill
             return None
 
-        weights = self._get_logits_head_gate(x, q_scale)
+        opt_weight_qscale_fuse = True
+        if opt_weight_qscale_fuse:
+            weights = torch.empty(q_scale.shape[0], self.weights_proj.weight.shape[0], device=x.device, dtype=x.dtype)
+            esimd_kernel_uni(
+                x, self.weights_proj.weight, q_scale, weights,
+                weights, weights, weights, weights, weights, weights,
+                3876,
+                q_scale.shape[0], # input_len
+                0, 0, 0, 0, 0, 0, 0, 0, self.softmax_scale, 1.0, 1.0, 1.0, 1.0,
+            )
+        else:
+            weights = self._get_logits_head_gate(x, q_scale)
+            
+            assert len(weights.shape) == 3
+            weights = weights.squeeze(-1)
 
         topk_result = self.forward_indexer(
-            query.contiguous(),
+            query,
             weights,
             forward_batch,
             topk=self.index_topk,

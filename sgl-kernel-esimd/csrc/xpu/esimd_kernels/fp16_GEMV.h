@@ -23,12 +23,14 @@ void GEMV_a16_wfp16_block(
   uint8_t* input_data,
   uint8_t* weight_data, 
   uint8_t* bias_data,
+  uint8_t* q_scale_data,
   uint8_t* output_data,
   uint32_t M,
   uint32_t N,
   uint32_t K,
   uint32_t batch,
   uint32_t has_bias,
+  float softmax_scale,
   sycl::queue& q) {
 
     assert(K % HD == 0);
@@ -149,6 +151,13 @@ void GEMV_a16_wfp16_block(
                 final_result[pp] = sycl::ext::intel::esimd::detail::sum<IT, IT, NT>(result_to_reduce.template select<NT, PPG>(pp));
               }
               
+              if (q_scale_data)
+              {
+                simd<IT, PPG> q_scale_cur = block_load<IT, PPG>(((IT*)q_scale_data) + h * PPG + b * M * N + ii * N);
+                final_result = final_result * q_scale_cur;
+                final_result = final_result * softmax_scale;
+              }
+
               // load bias  (PPG)
               if (has_bias)
               {
