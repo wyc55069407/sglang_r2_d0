@@ -1752,7 +1752,7 @@ class DeepseekV2AttentionMLA(nn.Module):
             hidden_states = results.flatten()[start_offset:end_offset].view(seq_len, -1)
 
         opt_dsa_mega = True
-        if opt_dsa_mega and forward_batch.forward_mode.is_decode():
+        if opt_dsa_mega and forward_batch.forward_mode.is_decode() and self.use_nsa:
             if is_tbo:
                 backend = forward_batch.attn_backend.primary
             else:
@@ -2761,7 +2761,7 @@ class DeepseekV2Model(nn.Module):
     ) -> None:
         # YC WA
         if enable_6_layer_dbg:
-            config.num_hidden_layers = 3
+            config.num_hidden_layers = 6
         super().__init__()
         self.padding_id = config.pad_token_id
         self.vocab_size = config.vocab_size

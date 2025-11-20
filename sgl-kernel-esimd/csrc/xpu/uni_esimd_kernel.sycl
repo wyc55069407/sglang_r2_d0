@@ -1758,6 +1758,9 @@ inline void esimd_update_kv_dsa_index(
         {
           simd<uint32_t, 32> topk_indices_cur = block_load<uint32_t, 32>((uint32_t*)topk_indices + b * 2048 + lid * 32);
 
+          simd_mask<32> mask = topk_indices_cur < kv_lens_cur;
+          topk_indices_cur.merge(topk_indices_cur, kv_lens_cur-1, mask);
+
           simd<uint32_t, 32> offsets = (topk_indices_cur + kv_indptr_cur_0) * sizeof(int32_t);
           simd<int32_t, 32> topk_indices_got = gather<int32_t, 32>((int32_t*)kv_indices, offsets);
 
