@@ -50,7 +50,7 @@ from sglang.srt.layers.linear import (
     ReplicatedLinear,
     RowParallelLinear,
 )
-from sglang.srt.layers.logits_processor import LogitsProcessor
+from sglang.srt.layers.logits_processor import LogitsProcessor, LogitsMetadata
 from sglang.srt.layers.moe.ep_moe.layer import get_moe_impl_class
 from sglang.srt.layers.moe.ep_moe.token_dispatcher import DeepEPDispatcher
 from sglang.srt.layers.moe.topk import select_experts
@@ -139,6 +139,7 @@ enable_esimd_opt = bool(int(os.getenv("ENABLE_ESIMD_TOPK_OPT", "0")))
 enable_mega_kernel_opt = bool(int(os.getenv("ENABLE_MEGA_OPT", "0")))
 enable_6_layer_dbg = bool(int(os.getenv("ENABLE_6_LAYER_DBG", "0")))
 disable_dsa = bool(int(os.getenv("DISABLE_DSA", "0")))
+batch_split_prefill = True
 
 logger = logging.getLogger(__name__)
 
@@ -1406,9 +1407,18 @@ class DeepseekV2AttentionMLA(nn.Module):
         latent_cache[:, :, self.kv_lora_rank :] = k_pe
 
         # Save latent cache
-        forward_batch.token_to_kv_pool.set_kv_buffer(
-            self.attn_mha, forward_batch.out_cache_loc, latent_cache, None
-        )
+        if batch_split_prefill:
+            b = forward_batch.current_prefill_batch_idx
+            start_pos = forward_batch.extend_start_loc[b]
+            end_pos = start_pos + forward_batch.seq_lens_cpu[b]
+            forward_batch.token_to_kv_pool.set_kv_buffer(
+                self.attn_mha, forward_batch.out_cache_loc[start_pos:end_pos], latent_cache, None
+            )
+            # print("forward_batch.out_cache_loc[start_pos:end_pos] ", start_pos, "~", end_pos)
+        else:
+            forward_batch.token_to_kv_pool.set_kv_buffer(
+                self.attn_mha, forward_batch.out_cache_loc, latent_cache, None
+            )
 
         topk_indices = None
         if q_lora is not None:
@@ -2857,6 +2867,7 @@ class DeepseekV2Model(nn.Module):
                 hidden_states = self.norm(hidden_states)
             else:
                 hidden_states, _ = self.norm(hidden_states, residual)
+
         return hidden_states
 
 
@@ -2961,6 +2972,44 @@ class DeepseekV2ForCausalLM(nn.Module):
         forward_batch: ForwardBatch,
         input_embeds: torch.Tensor = None,
     ) -> torch.Tensor:
+
+        forward_batch.already_pruned = False
+        if batch_split_prefill and forward_batch.forward_mode.is_extend():
+
+            logits_metadata = LogitsMetadata.from_forward_batch(forward_batch)
+            # Prefill without input logprobs.
+            if logits_metadata.padded_static_len < 0 and not logits_metadata.extend_return_logprob and input_embeds is None:
+                pass
+            else:
+                print("padded_static_len not supported in batch split prefill!!!!!")
+                print("extend_return_logprob not supported in batch split prefill!!!!!")
+                print("input_embeds not supported in batch split prefill!!!!!")
+                exit()
+
+            # hard code for now
+            pruned_states = torch.empty(forward_batch.batch_size, 7168, dtype=torch.float16, device=input_ids.device)
+            for b in range(forward_batch.batch_size):
+                start_pos = forward_batch.extend_start_loc[b]
+                end_pos = start_pos + forward_batch.seq_lens_cpu[b]
+                forward_batch.current_prefill_batch_idx = b
+                pruned_states[b] = self.model(input_ids[start_pos:end_pos], positions[start_pos:end_pos], forward_batch, input_embeds)[-1]
+
+            # hidden_states = self.model(input_ids, positions, forward_batch, input_embeds)
+            
+            # logits_metadata = LogitsMetadata.from_forward_batch(forward_batch)
+            # # Prefill without input logprobs.
+            # if logits_metadata.padded_static_len < 0 and not logits_metadata.extend_return_logprob:
+            #     last_index = torch.cumsum(logits_metadata.extend_seq_lens, dim=0) - 1
+            # else:
+            #     print("padded_static_len not supported in batch split prefill!!!!!")
+            #     print("extend_return_logprob not supported in batch split prefill!!!!!")
+            # pruned_states = hidden_states[last_index]
+            
+            forward_batch.already_pruned = True
+            return self.logits_processor(
+                input_ids, pruned_states, self.lm_head, forward_batch
+            )
+        
         hidden_states = self.model(input_ids, positions, forward_batch, input_embeds)
 
         return self.logits_processor(

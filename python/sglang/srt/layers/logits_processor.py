@@ -235,87 +235,100 @@ class LogitsProcessor(nn.Module):
         logits_metadata: Union[LogitsMetadata, ForwardBatch],
         aux_hidden_states: Optional[torch.Tensor] = None,
     ) -> LogitsProcessorOutput:
-        if isinstance(logits_metadata, ForwardBatch):
-            logits_metadata = LogitsMetadata.from_forward_batch(logits_metadata)
-        # Get the last hidden states and last logits for the next token prediction
-        if (
-            logits_metadata.forward_mode.is_decode_or_idle()
-            or logits_metadata.forward_mode.is_target_verify()
-        ):
+    
+        already_pruned = logits_metadata.already_pruned
+
+        if already_pruned:
+            if isinstance(logits_metadata, ForwardBatch):
+                logits_metadata = LogitsMetadata.from_forward_batch(logits_metadata)
             pruned_states = hidden_states
-            if aux_hidden_states is not None:
-                aux_pruned_states = [hidden for hidden in aux_hidden_states]
-            sample_indices = None
-            input_logprob_indices = None
-        elif (
-            logits_metadata.forward_mode.is_extend()
-            and not logits_metadata.extend_return_logprob
-        ):
-            # Prefill without input logprobs.
-            if logits_metadata.padded_static_len < 0:
-                last_index = torch.cumsum(logits_metadata.extend_seq_lens, dim=0) - 1
-            else:
-                # If padding_static length is 5 and extended_seq_lens is [2, 3],
-                # then our batch looks like [t00, t01, p, p, p, t10, t11, t12, p, p]
-                # and this retrieves t01 and t12, which are the valid last tokens
-                idx = torch.arange(
-                    len(logits_metadata.extend_seq_lens),
-                    device=logits_metadata.extend_seq_lens.device,
-                )
-                last_index = (
-                    idx * logits_metadata.padded_static_len
-                    + logits_metadata.extend_seq_lens
-                    - 1
-                )
-            pruned_states = hidden_states[last_index]
-            if aux_hidden_states is not None:
-                aux_pruned_states = [hidden[last_index] for hidden in aux_hidden_states]
             sample_indices = None
             input_logprob_indices = None
         else:
-            # Input logprobs are required.
-            # Find 3 different indices.
-            # 1. pruned_states: hidden states that we want logprobs from.
-            # 2. sample_indices: Indices that have sampled tokens.
-            # 3. input_logprob_indices: Indices that have input logprob tokens.
-            sample_index_pt = -1
-            sample_indices = []
-            input_logprob_indices_pt = 0
-            input_logprob_indices = []
-            pt, pruned_states = 0, []
-            for extend_logprob_start_len, extend_len in zip(
-                logits_metadata.extend_logprob_start_lens_cpu,
-                logits_metadata.extend_seq_lens_cpu,
+            if isinstance(logits_metadata, ForwardBatch):
+                logits_metadata = LogitsMetadata.from_forward_batch(logits_metadata)
+
+            # Get the last hidden states and last logits for the next token prediction
+            if (
+                logits_metadata.forward_mode.is_decode_or_idle()
+                or logits_metadata.forward_mode.is_target_verify()
             ):
-                # It can happen in chunked prefill. We still need to sample 1 token,
-                # But we don't want to include it in input logprob.
-                if extend_len == extend_logprob_start_len:
-                    start_len = extend_logprob_start_len - 1
+                pruned_states = hidden_states
+                if aux_hidden_states is not None:
+                    aux_pruned_states = [hidden for hidden in aux_hidden_states]
+                sample_indices = None
+                input_logprob_indices = None
+            elif (
+                logits_metadata.forward_mode.is_extend()
+                and not logits_metadata.extend_return_logprob
+            ):
+                # Prefill without input logprobs.
+                if logits_metadata.padded_static_len < 0:
+                    last_index = torch.cumsum(logits_metadata.extend_seq_lens, dim=0) - 1
                 else:
-                    start_len = extend_logprob_start_len
+                    # If padding_static length is 5 and extended_seq_lens is [2, 3],
+                    # then our batch looks like [t00, t01, p, p, p, t10, t11, t12, p, p]
+                    # and this retrieves t01 and t12, which are the valid last tokens
+                    idx = torch.arange(
+                        len(logits_metadata.extend_seq_lens),
+                        device=logits_metadata.extend_seq_lens.device,
+                    )
+                    last_index = (
+                        idx * logits_metadata.padded_static_len
+                        + logits_metadata.extend_seq_lens
+                        - 1
+                    )
+                pruned_states = hidden_states[last_index]
+                if aux_hidden_states is not None:
+                    aux_pruned_states = [hidden[last_index] for hidden in aux_hidden_states]
+                sample_indices = None
+                input_logprob_indices = None
+            else:
+                # Input logprobs are required.
+                # Find 3 different indices.
+                # 1. pruned_states: hidden states that we want logprobs from.
+                # 2. sample_indices: Indices that have sampled tokens.
+                # 3. input_logprob_indices: Indices that have input logprob tokens.
+                sample_index_pt = -1
+                sample_indices = []
+                input_logprob_indices_pt = 0
+                input_logprob_indices = []
+                pt, pruned_states = 0, []
+                for extend_logprob_start_len, extend_len in zip(
+                    logits_metadata.extend_logprob_start_lens_cpu,
+                    logits_metadata.extend_seq_lens_cpu,
+                ):
+                    # It can happen in chunked prefill. We still need to sample 1 token,
+                    # But we don't want to include it in input logprob.
+                    if extend_len == extend_logprob_start_len:
+                        start_len = extend_logprob_start_len - 1
+                    else:
+                        start_len = extend_logprob_start_len
 
-                # We always need at least 1 token to sample because that's required
-                # by a caller.
-                assert extend_len > start_len
-                pruned_states.append(hidden_states[pt + start_len : pt + extend_len])
-                pt += extend_len
-                sample_index_pt += extend_len - start_len
-                sample_indices.append(sample_index_pt)
-                input_logprob_indices.extend(
-                    [
-                        input_logprob_indices_pt + i
-                        for i in range(extend_len - extend_logprob_start_len)
-                    ]
+                    # We always need at least 1 token to sample because that's required
+                    # by a caller.
+                    assert extend_len > start_len
+                    pruned_states.append(hidden_states[pt + start_len : pt + extend_len])
+                    pt += extend_len
+                    sample_index_pt += extend_len - start_len
+                    sample_indices.append(sample_index_pt)
+                    input_logprob_indices.extend(
+                        [
+                            input_logprob_indices_pt + i
+                            for i in range(extend_len - extend_logprob_start_len)
+                        ]
+                    )
+                    input_logprob_indices_pt += extend_len - start_len
+
+                pruned_states = torch.cat(pruned_states)
+                sample_indices = torch.tensor(
+                    sample_indices, device=pruned_states.device, dtype=torch.int64
                 )
-                input_logprob_indices_pt += extend_len - start_len
+                input_logprob_indices = torch.tensor(
+                    input_logprob_indices, device=pruned_states.device, dtype=torch.int64
+                )
 
-            pruned_states = torch.cat(pruned_states)
-            sample_indices = torch.tensor(
-                sample_indices, device=pruned_states.device, dtype=torch.int64
-            )
-            input_logprob_indices = torch.tensor(
-                input_logprob_indices, device=pruned_states.device, dtype=torch.int64
-            )
+        # print("pruned_states==========================\n", pruned_states)
 
         # Compute logits for both input and sampled tokens.
         logits = self._get_logits(pruned_states, lm_head, logits_metadata)

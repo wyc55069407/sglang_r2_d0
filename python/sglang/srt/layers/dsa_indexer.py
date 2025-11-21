@@ -697,20 +697,16 @@ class Indexer(CustomOp):
             key = key.squeeze(-2)
             k_scale = k_scale.squeeze(-1)
 
-            forward_batch.tbo_start_batch_idx = 0
-            if forward_batch.req_pool_indices.shape[0] != self.k_cache.shape[0]:
-                forward_batch.tbo_start_batch_idx = forward_batch.req_pool_indices_cpu[0].item()
-            # print("forward_batch.tbo_start_batch_idx = ", forward_batch.tbo_start_batch_idx)
-
-            q_len_start = 0
-            for i in range(forward_batch.batch_size):
+            if hasattr(forward_batch, "current_prefill_batch_idx"):  # means batch_split_prefill
+                forward_batch.tbo_start_batch_idx = 0
+                q_len_start = 0
+                i = forward_batch.current_prefill_batch_idx  # current batch
                 seq_len = forward_batch.seq_lens_cpu[i].item()
                 q_len = (
                     forward_batch.extend_seq_lens_cpu[i]
                     if forward_batch.forward_mode.is_extend()
                     else 1
                 )
-
                 q_len_end = q_len_start + q_len
 
                 start_pos = seq_len - q_len
@@ -722,8 +718,34 @@ class Indexer(CustomOp):
                 self.k_scale[ii:ii+1, start_pos:end_pos] = k_scale[q_len_start:q_len_end]
 
                 # print("layer", layer_id, " batch", ii, " dsa: update k at: ", start_pos, "~", end_pos)
+            else:
+                forward_batch.tbo_start_batch_idx = 0
+                if forward_batch.req_pool_indices.shape[0] != self.k_cache.shape[0]:
+                    forward_batch.tbo_start_batch_idx = forward_batch.req_pool_indices_cpu[0].item()
+                # print("forward_batch.tbo_start_batch_idx = ", forward_batch.tbo_start_batch_idx)
 
-                q_len_start = q_len_end
+                q_len_start = 0
+                for i in range(forward_batch.batch_size):
+                    seq_len = forward_batch.seq_lens_cpu[i].item()
+                    q_len = (
+                        forward_batch.extend_seq_lens_cpu[i]
+                        if forward_batch.forward_mode.is_extend()
+                        else 1
+                    )
+
+                    q_len_end = q_len_start + q_len
+
+                    start_pos = seq_len - q_len
+                    end_pos = seq_len
+
+                    ii = i + forward_batch.tbo_start_batch_idx
+
+                    self.k_cache[ii:ii+1, start_pos:end_pos] = key[q_len_start:q_len_end]
+                    self.k_scale[ii:ii+1, start_pos:end_pos] = k_scale[q_len_start:q_len_end]
+
+                    # print("layer", layer_id, " batch", ii, " dsa: update k at: ", start_pos, "~", end_pos)
+
+                    q_len_start = q_len_end
 
         if forward_batch.forward_mode.is_extend():
             global index_score_rsv

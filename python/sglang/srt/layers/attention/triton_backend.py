@@ -867,7 +867,19 @@ class TritonAttnBackend(AttentionBackend):
                     kv_indices.shape,
                 )
                 self.printed_info_prefill = True
-            B = kv_indptr.shape[0] - 1
+
+            if hasattr(forward_batch, "current_prefill_batch_idx"):  # means batch_split_prefill
+                B = 1
+                if kv_indices.shape[0] != 0:
+                    print("batch_split_prefill only support with no history kv_caches!!!!")
+                    exit()
+                idx = forward_batch.current_prefill_batch_idx
+                extend_prefix_lens_cpu = forward_batch.extend_prefix_lens_cpu[idx:idx+1]
+                extend_seq_lens_cpu = forward_batch.extend_seq_lens_cpu[idx:idx+1]
+            else:
+                B = kv_indptr.shape[0] - 1
+                extend_prefix_lens_cpu = forward_batch.extend_prefix_lens_cpu
+                extend_seq_lens_cpu = forward_batch.extend_seq_lens_cpu
 
             Lq = q.view(-1, layer.tp_q_head_num, layer.qk_head_dim).shape[-1]
             sm_scale = layer.scaling or 1.0 / (Lq**0.5)
@@ -880,8 +892,8 @@ class TritonAttnBackend(AttentionBackend):
                 forward_batch.token_to_kv_pool.get_key_buffer(layer.layer_id),
                 forward_batch.token_to_kv_pool.get_value_buffer(layer.layer_id),
                 kv_indices,
-                forward_batch.extend_prefix_lens_cpu,
-                forward_batch.extend_seq_lens_cpu,
+                extend_prefix_lens_cpu,
+                extend_seq_lens_cpu,
                 scaling=sm_scale,
                 enable_gqa=True,
                 causal=True,
@@ -890,6 +902,10 @@ class TritonAttnBackend(AttentionBackend):
 
             return o
         else:
+            if hasattr(forward_batch, "current_prefill_batch_idx"):  # means batch_split_prefill
+                print("batch_split_prefill only support with esimd SDP, normal extend_attention_fwd cannot work with batch_split_prefill!!!!")
+                exit()
+
             self.extend_attention_fwd(
                 q.view(-1, layer.tp_q_head_num, layer.qk_head_dim),
                 k.contiguous(),
