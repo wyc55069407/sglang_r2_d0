@@ -1307,7 +1307,8 @@ class EPMoEHeto(EPMoESparse):
             result = self.forward_routed_experts_combine(
                 hidden_states_shape,
                 hidden_states_device,
-                hidden_states_dtype,
+                # hidden_states_dtype,
+                torch.float32,
                 gpu_result,
                 cpu_result,
             )

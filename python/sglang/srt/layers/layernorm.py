@@ -152,7 +152,7 @@ class RMSNorm(CustomOp):
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         if not x.is_contiguous():
             x = x.contiguous()
-        if enable_esimd_opt:
+        if enable_esimd_opt and x.dtype == torch.float16:
             x = self.esimd_rmsNormFuse(x, x.shape[-2], residual)
         else:
             orig_dtype = x.dtype

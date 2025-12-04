@@ -139,7 +139,7 @@ enable_esimd_opt = bool(int(os.getenv("ENABLE_ESIMD_TOPK_OPT", "0")))
 enable_mega_kernel_opt = bool(int(os.getenv("ENABLE_MEGA_OPT", "0")))
 enable_6_layer_dbg = bool(int(os.getenv("ENABLE_6_LAYER_DBG", "0")))
 disable_dsa = bool(int(os.getenv("DISABLE_DSA", "0")))
-batch_split_prefill = True
+batch_split_prefill = False
 
 logger = logging.getLogger(__name__)
 
@@ -2637,9 +2637,24 @@ class DeepseekV2DecoderLayer(nn.Module):
             )
 
         else:
+            hidden_states = hidden_states.to(torch.float16)
+            # if get_tensor_model_parallel_rank() == 0:
+            #     if hidden_states.isnan().any().item():
+            #         print(hidden_states)
+            #     else:
+            #         print(hidden_states)
+            #         print(".", end="")
+
             hidden_states, residual = self.layer_communicator.prepare_attn(
                 hidden_states, residual, forward_batch
             )
+
+            # if get_tensor_model_parallel_rank() == 0:
+            #     if hidden_states.isnan().any().item():
+            #         print(hidden_states)
+            #     else:
+            #         print(hidden_states)
+            #         print("1", end="")
 
             hidden_states = self.self_attn(
                 positions=positions,
@@ -2647,16 +2662,45 @@ class DeepseekV2DecoderLayer(nn.Module):
                 forward_batch=forward_batch,
                 zero_allocator=zero_allocator,
             )
+        
+        # if get_tensor_model_parallel_rank() == 0:
+        #     if hidden_states.isnan().any().item():
+        #         print(hidden_states)
+        #     else:
+        #         print(hidden_states)
+        #         print("2", end="")
 
         hidden_states, residual = self.layer_communicator.prepare_mlp(
             hidden_states, residual, forward_batch
         )
+        
+        # if get_tensor_model_parallel_rank() == 0:
+        #     if hidden_states.isnan().any().item():
+        #         print(hidden_states)
+        #     else:
+        #         print(hidden_states)
+        #         print("3", end="")
 
         hidden_states = self.mlp(hidden_states, forward_batch)
+
+        
+        # if get_tensor_model_parallel_rank() == 0:
+        #     if hidden_states.isnan().any().item():
+        #         print(hidden_states)
+        #     else:
+        #         print(hidden_states)
+        #         print("4", end="")
 
         hidden_states, residual = self.layer_communicator.postprocess_layer(
             hidden_states, residual, forward_batch
         )
+
+        # if get_tensor_model_parallel_rank() == 0:
+        #     if hidden_states.isnan().any().item():
+        #         print(hidden_states)
+        #     else:
+        #         print(hidden_states)
+        #         print("5 ", end="")
 
         return hidden_states, residual
 
@@ -2862,11 +2906,28 @@ class DeepseekV2Model(nn.Module):
                 zero_allocator=zero_allocator,
             )
 
+        # if get_tensor_model_parallel_rank() == 0:
+        #     print("++++++")
+        #     print(hidden_states)
+        #     print("++++++")
+        
+        # iii = hidden_states[0,0].to(torch.float32).item()
+        # if iii > 1000 or iii < -1000:
+        #     hidden_states[...] = 0
+        #     print("modified!!!!")
+        #     print(hidden_states)
+
+
         if not forward_batch.forward_mode.is_idle():
             if residual is None:
                 hidden_states = self.norm(hidden_states)
             else:
                 hidden_states, _ = self.norm(hidden_states, residual)
+
+        # if get_tensor_model_parallel_rank() == 0:
+        #     print("_____")
+        #     print(hidden_states)
+        #     print("_____")
 
         return hidden_states
 
@@ -3011,6 +3072,13 @@ class DeepseekV2ForCausalLM(nn.Module):
             )
         
         hidden_states = self.model(input_ids, positions, forward_batch, input_embeds)
+
+        # if get_tensor_model_parallel_rank() == 0:
+        #     if hidden_states.isnan().any().item():
+        #         print(hidden_states)
+        #     else:
+        #         print(hidden_states)
+        #         print("---")
 
         return self.logits_processor(
             input_ids, hidden_states, self.lm_head, forward_batch
