@@ -1018,32 +1018,49 @@ class TritonAttnBackend(AttentionBackend):
         if enable_esimd_opt and is_mla_absorb:
 
             if hasattr(forward_batch, "topk_indices") and forward_batch.topk_indices is not None:
-                start_offset = 0
-                kv_indptr_updated = kv_indptr.clone()
-                for i in range(forward_batch.batch_size):
-                    
-                    kvlen = kv_indptr[i+1] - kv_indptr[i]
-                    if kvlen > 2048:
-                        kvlen_new = 2048  # update kv_indptr
-                        
-                        start_offset += kvlen_new
-                    else:
-                        start_offset += kvlen
+                update_kv_dsa_index_fuse = True
 
-                    kv_indptr_updated[i+1] = start_offset
-                
-                kv_indices_new = torch.zeros(start_offset, device=kv_indices.device, dtype=kv_indices.dtype)
-                for i in range(forward_batch.batch_size):
-                    kvlen = kv_indptr_updated[i+1] - kv_indptr_updated[i]
-                    if kvlen >= 2048:
-                        kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]][forward_batch.topk_indices[i].to(torch.int64)]
-                    else:
-                        kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]]
+                start_offset = 0
+                kv_indptr_updated = torch.empty_like(kv_indptr) #kv_indptr.clone()
+                if update_kv_dsa_index_fuse is True:
+                    kv_indices_new = torch.empty(forward_batch.batch_size * 2048, device=kv_indices.device, dtype=kv_indices.dtype)
+                    esimd_kernel_uni(
+                        kv_indptr, 
+                        kv_indices, 
+                        forward_batch.topk_indices,
+                        kv_indptr_updated, 
+                        kv_indices_new, 
+                        kv_indptr_updated, kv_indptr_updated, kv_indptr_updated, kv_indptr_updated, kv_indptr_updated,
+                        3777,
+                        forward_batch.batch_size,
+                        0, 0, 0, 0, 0, 0, 0, 0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                    )
+                else:
+                    for i in range(forward_batch.batch_size):
+                        
+                        kvlen = kv_indptr[i+1] - kv_indptr[i]
+                        if kvlen > 2048:
+                            kvlen_new = 2048  # update kv_indptr
+                            
+                            start_offset += kvlen_new
+                        else:
+                            start_offset += kvlen
+
+                        kv_indptr_updated[i+1] = start_offset
+                    
+                    kv_indices_new = torch.zeros(start_offset, device=kv_indices.device, dtype=kv_indices.dtype)
+
+                    for i in range(forward_batch.batch_size):
+                        kvlen = kv_indptr_updated[i+1] - kv_indptr_updated[i]
+                        if kvlen >= 2048:
+                            kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]][forward_batch.topk_indices[i].to(torch.int64)]
+                        else:
+                            kv_indices_new[kv_indptr_updated[i]:kv_indptr_updated[i+1]] = kv_indices[kv_indptr[i]:kv_indptr[i+1]]
 
                 kv_indptr = kv_indptr_updated
                 kv_indices = kv_indices_new
-                print("kv_indices updated: ", kv_indices, kv_indices.shape)
-                # breakpoint()
+                # if layer.layer_id == 33:
+                #     print("kv_indices updated: ", kv_indices, kv_indices.shape, kv_indptr)
 
             if not self.printed_info_decode:
                 print(

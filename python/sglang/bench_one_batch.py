@@ -75,7 +75,7 @@ from sglang.srt.utils import (
     suppress_other_loggers,
 )
 
-
+stream_out = bool(int(os.getenv("STREAM_OUT", "0")))
 @dataclasses.dataclass
 class BenchArgs:
     run_name: str = "default"
@@ -5469,14 +5469,15 @@ def prepare_inputs_for_correctness_test(bench_args, tokenizer, batch_size):
 # """,
         # "The capital of France is",
         # "The capital of the United Kindom is",
-# """Which one in following choices is the inflection point of the curve y = (x-1)((x-2)^2)((x-3)^3)((x-4)^4) ?
-#   A.  (1, 0)      B.  (2, 0)      C.  (3, 0)     D.  (4, 0)
-#   give the correct answer:
-# """,
-"""Aya会进行一段长度为9公里 的散步，然后在一家咖啡店停留。当她以每小时s公里的恒定速度行走时，整个散步加上在咖啡店停留的时间一共需要4小时，其中包含在咖啡店停留的t分钟。当她以s+2公里每小时的速度行走时，整个过程（包括在咖啡店停留的时间）需要2小时24分钟。
-假设Aya以s+1/2公里每小时的速度行走，求她在这种情况下（包括在咖啡店停留的时间）的总 时间（以分钟为单位）。
-Answer:
+"""Which one in following choices is the inflection point of the curve y = (x-1)((x-2)^2)((x-3)^3)((x-4)^4) ?
+  A.  (1, 0)      B.  (2, 0)      C.  (3, 0)     D.  (4, 0)
+  give the correct answer:
+<think>
 """,
+# """Aya会进行一段长度为9公里 的散步，然后在一家咖啡店停留。当她以每小时s公里的恒定速度行走时，整个散步加上在咖啡店停留的时间一共需要4小时，其中包含在咖啡店停留的t分钟。当她以s+2公里每小时的速度行走时，整个过程（包括在咖啡店停留的时间）需要2小时24分钟。
+# 假设Aya以s+1/2公里每小时的速度行走，求她在这种情况下（包括在咖啡店停留的时间）的总 时间（以分钟为单位）。
+# Answer:
+# """,
         # "Today is a sunny day and I like",
         # "Sky is blue because",
         """The Qwen3 Embedding model series is the latest proprietary model of the Qwen family, specifically designed for text embedding and ranking tasks. Building upon the dense foundational models of the Qwen3 series, it provides a comprehensive range of text embeddings and reranking models in various sizes (0.6B, 4B, and 8B). This series inherits the exceptional multilingual capabilities, long-text understanding, and reasoning skills of its foundational model. The Qwen3 Embedding series represents significant advancements in multiple text embedding and ranking tasks, including text retrieval, code retrieval, text classification, text clustering, and bitext mining.
@@ -5668,7 +5669,12 @@ def correctness_test(
 
     # Extend (prefill w/ KV cache)
     next_token_ids, next_token_logits, batch = extend(reqs, model_runner)
-    rank_print(f"prefill logits (final): {next_token_logits} \n")
+
+    if stream_out:
+        rank_print("Start Answer:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n\n\n\n\n\n\n")
+        rank_print(tokenizer.decode(next_token_ids), end="")
+    else:
+        rank_print(f"prefill logits (final): {next_token_logits} \n")
 
     # Decode
     output_ids = [input_ids[i] + [next_token_ids[i]] for i in range(len(input_ids))]
@@ -5677,12 +5683,20 @@ def correctness_test(
         next_token_ids_list = next_token_ids.tolist()
         for i in range(len(reqs)):
             output_ids[i].append(next_token_ids_list[i])
-        rank_print(f"decode logits: {next_token_logits} \n")
+        if stream_out:
+            str_out = tokenizer.decode(next_token_ids)
+            
+            rank_print(str_out, end="", flush=True)
+            if "end▁of▁sentence" in str_out:
+                break
+        else:
+            rank_print(f"decode logits: {next_token_logits} \n")
 
-    # Print output texts
-    for i in range(len(reqs)):
-        rank_print(f"========== Prompt {i} ==========")
-        rank_print(tokenizer.decode(output_ids[i]), "\n")
+    if not stream_out:
+        # Print output texts
+        for i in range(len(reqs)):
+            rank_print(f"========== Prompt {i} ==========")
+            rank_print(tokenizer.decode(output_ids[i]), "\n")
 
 
 def synchronize(device):

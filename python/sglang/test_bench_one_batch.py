@@ -74,7 +74,7 @@ from sglang.srt.utils import (
     set_gpu_proc_affinity,
     suppress_other_loggers,
 )
-
+stream_out = bool(int(os.getenv("STREAM_OUT", "0")))
 
 @dataclasses.dataclass
 class BenchArgs:
@@ -331,7 +331,12 @@ def correctness_test(
 
     # Extend (prefill w/ KV cache)
     next_token_ids, next_token_logits, batch = extend(reqs, model_runner)
-    rank_print(f"prefill logits (final): {next_token_logits} \n")
+
+    if stream_out:
+        rank_print("Start Answer:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n\n\n\n\n\n\n")
+        rank_print(tokenizer.decode(next_token_ids), end="")
+    else:
+        rank_print(f"prefill logits (final): {next_token_logits} \n")
 
     # Decode
     output_ids = [input_ids[i] + [next_token_ids[i]] for i in range(len(input_ids))]
@@ -340,12 +345,20 @@ def correctness_test(
         next_token_ids_list = next_token_ids.tolist()
         for i in range(len(reqs)):
             output_ids[i].append(next_token_ids_list[i])
-        rank_print(f"decode logits: {next_token_logits} \n")
+        if stream_out:
+            str_out = tokenizer.decode(next_token_ids)
+            
+            rank_print(str_out, end="", flush=True)
+            if "end▁of▁sentence" in str_out:
+                break
+        else:
+            rank_print(f"decode logits: {next_token_logits} \n")
 
-    # Print output texts
-    for i in range(len(reqs)):
-        rank_print(f"========== Prompt {i} ==========")
-        rank_print(tokenizer.decode(output_ids[i]), "\n")
+    if not stream_out:
+        # Print output texts
+        for i in range(len(reqs)):
+            rank_print(f"========== Prompt {i} ==========")
+            rank_print(tokenizer.decode(output_ids[i]), "\n")
 
 
 def synchronize(device):
