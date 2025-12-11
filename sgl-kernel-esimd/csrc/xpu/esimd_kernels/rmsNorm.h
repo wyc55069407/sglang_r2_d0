@@ -5,6 +5,7 @@ using namespace sycl::ext::intel::esimd::xmx;
 using fp16 = sycl::half;
 using namespace sycl;
 
+template<typename TP>
 ESIMD_INLINE void residual_rmsNorm128PerThread_64t(uint8_t* weight, uint8_t* residual, uint8_t* hidden_states, uint8_t* hidden_states_out, int64_t hidden_size, int64_t input_len, int64_t add_residual, float variance_epsilon ,nd_item<1>& ndi) {
 
   __ESIMD_NS::slm_init(64 * sizeof(float));
@@ -15,7 +16,8 @@ ESIMD_INLINE void residual_rmsNorm128PerThread_64t(uint8_t* weight, uint8_t* res
   int active_thread_num = hidden_size / 128;
   if (h >= input_len) return;
 
-  simd<fp16, 128> input_FP16;
+  simd<fp16, 128> output_FP16;
+  simd<TP, 128> input_in;
   simd<float, 128> input;
   simd<float, 128> input_powered;
   simd<fp16, 128> weight_FP16;
@@ -27,13 +29,7 @@ ESIMD_INLINE void residual_rmsNorm128PerThread_64t(uint8_t* weight, uint8_t* res
 
   if (hh < active_thread_num)
   {
-    input_FP16.template bit_cast_view<uint8_t>().template select<256, 1>(0) =
-          __ESIMD_ENS::lsc_block_load<
-          uint8_t,
-          256,
-          __ESIMD_ENS::lsc_data_size::default_size,
-          __ESIMD_ENS::cache_hint::cached,
-          __ESIMD_ENS::cache_hint::cached>((uint8_t*)hidden_states + h * hidden_size * sizeof(fp16) + inputOffset);
+    input_in = block_load<TP, 128>((TP*)hidden_states + h * hidden_size + 128 * hh);
     
     if (add_residual == 1)
     {
@@ -56,18 +52,18 @@ ESIMD_INLINE void residual_rmsNorm128PerThread_64t(uint8_t* weight, uint8_t* res
   }
   else
   {
-    input_FP16 = 0;
+    input_in = 0;
     weight_FP16 = 0;
     residual_FP16 = 0;
   }
 
   if (add_residual == 1)
   {
-    input = input_FP16 + residual_FP16;
+    input = input_in + residual_FP16;
   }
   else
   {
-    input = input_FP16;
+    input = input_in;
   }
   
   // write back new residual
@@ -127,17 +123,12 @@ ESIMD_INLINE void residual_rmsNorm128PerThread_64t(uint8_t* weight, uint8_t* res
 
   input = input / varianceAVG;
 
-  input_FP16 = input;
-  input_FP16 = input_FP16 * weight_FP16;
+  output_FP16 = input;
+  output_FP16 = output_FP16 * weight_FP16;
 
   if (hh < active_thread_num)
   {
-    __ESIMD_ENS::lsc_block_store<
-      fp16,
-      128,
-      __ESIMD_ENS::lsc_data_size::default_size,
-      __ESIMD_ENS::cache_hint::write_back,
-      __ESIMD_ENS::cache_hint::write_back>((fp16*)hidden_states_out + h * hidden_size + 128 * hh, input_FP16.select<128, 1>(0));
+    block_store<fp16, 128>((fp16*)hidden_states_out + h * hidden_size + 128 * hh, output_FP16);
   }
 }
 

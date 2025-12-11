@@ -108,9 +108,12 @@ class RMSNorm(CustomOp):
         rms_norm(out, x, self.weight.data, self.variance_epsilon)
         return out
 
-    def esimd_rmsNormFuse(self, hidden_states, seq_len, residual):
-        hidden_states_out = torch.empty_like(hidden_states)
+    def esimd_rmsNormFuse(self, hidden_states, seq_len, residual, intype):
+        hidden_states_out = torch.empty(hidden_states.shape, dtype=torch.float16, device=hidden_states.device)
 
+        isFloat32 = 0
+        if intype == torch.float32:
+            isFloat32 = 1
         add_residual = 0
         residual_in = hidden_states
         if residual is not None:
@@ -131,7 +134,7 @@ class RMSNorm(CustomOp):
             hidden_states.shape[-1],
             seq_len,
             add_residual,
-            0,
+            isFloat32,
             0,
             0,
             0,
@@ -152,8 +155,8 @@ class RMSNorm(CustomOp):
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         if not x.is_contiguous():
             x = x.contiguous()
-        if enable_esimd_opt and x.dtype == torch.float16:
-            x = self.esimd_rmsNormFuse(x, x.shape[-2], residual)
+        if enable_esimd_opt:
+            x = self.esimd_rmsNormFuse(x, x.shape[-2], residual, x.dtype)
         else:
             orig_dtype = x.dtype
             x = x.to(torch.float32)

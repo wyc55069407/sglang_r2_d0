@@ -139,7 +139,10 @@ enable_esimd_opt = bool(int(os.getenv("ENABLE_ESIMD_TOPK_OPT", "0")))
 enable_mega_kernel_opt = bool(int(os.getenv("ENABLE_MEGA_OPT", "0")))
 enable_6_layer_dbg = bool(int(os.getenv("ENABLE_6_LAYER_DBG", "0")))
 disable_dsa = bool(int(os.getenv("DISABLE_DSA", "0")))
-batch_split_prefill = False
+batch_split_prefill = True
+
+global last_layer_id
+last_layer_id = None
 
 logger = logging.getLogger(__name__)
 
@@ -475,6 +478,12 @@ class DeepseekV2MoE(nn.Module):
         ):
             return self.forward_cpu(hidden_states)
 
+        global last_layer_id
+        is_last_layer = (self.layer_id == last_layer_id)
+        out_dtype = hidden_states.dtype
+        if is_last_layer:
+            out_dtype = torch.float32
+
         n_tokens = hidden_states.shape[0]
         if enable_dummy_cpu_moe and n_tokens > 8:
             return hidden_states
@@ -483,7 +492,7 @@ class DeepseekV2MoE(nn.Module):
             final_hidden_states = torch.empty(
                 hidden_states.shape[0],
                 hidden_states.shape[1],
-                dtype=hidden_states.dtype,
+                dtype=out_dtype,
                 device=hidden_states.device,
             )
             router_logits = torch.empty(
@@ -558,14 +567,17 @@ class DeepseekV2MoE(nn.Module):
                 hidden_states=hidden_states,
                 router_logits=router_logits,
                 op_shared_experts=self._forward_shared_experts,
+                out_dtype=out_dtype
             )
         else:
             shared_output = self._forward_shared_experts(hidden_states)
             # router_logits: (num_tokens, n_experts)
 
             final_hidden_states = self.experts(
-                hidden_states=hidden_states, router_logits=router_logits
+                hidden_states=hidden_states, router_logits=router_logits,
+                out_dtype=out_dtype,
             )
+            print("------------------------------------------------------\n")
 
         if enable_esimd_opt and n_tokens <= 8:
             if final_hidden_states_expects_out is not None:
@@ -578,7 +590,7 @@ class DeepseekV2MoE(nn.Module):
                     self.routed_scaling_factor,  # float
                 )
             else:
-                final_hidden_states = shared_output
+                final_hidden_states[...] = shared_output
 
         else:
             final_hidden_states = final_hidden_states_expects_out
@@ -587,6 +599,7 @@ class DeepseekV2MoE(nn.Module):
             if shared_output is not None:
                 final_hidden_states = final_hidden_states + shared_output
 
+        # print(get_tensor_model_parallel_rank(), " ", final_hidden_states.dtype)
         if self.tp_size > 1:
             final_hidden_states = tensor_model_parallel_all_reduce(final_hidden_states)
         return final_hidden_states
@@ -808,6 +821,11 @@ class DeepseekV2MoE(nn.Module):
         if (
             state.forward_batch.forward_mode is not None
         ) and not state.forward_batch.forward_mode.is_idle():
+            global last_layer_id
+            is_last_layer = (self.layer_id == last_layer_id)
+            out_dtype = hidden_states_dtype
+            if is_last_layer:
+                out_dtype = torch.float32
             if enable_esimd_opt and state.n_tokens <= 8:
                 gpu_result = state.pop("gpu_experts_result")
                 cpu_result = state.pop("cpu_experts_result")
@@ -823,7 +841,7 @@ class DeepseekV2MoE(nn.Module):
                 combined = self.experts.forward_routed_experts_combine(
                     hidden_states_shape=hidden_states_shape,
                     hidden_states_device=hidden_states_device,
-                    hidden_states_dtype=hidden_states_dtype,
+                    hidden_states_dtype=out_dtype,
                     gpu_result=state.pop("gpu_experts_result"),
                     cpu_result=state.pop("cpu_experts_result"),
                 )
@@ -935,11 +953,18 @@ class DeepseekV2MoE(nn.Module):
     def op_output(self, state):
         final_hidden_states_expects_out = state.pop("hidden_states_after_combine")
         n_tokens = state.pop("n_tokens")
+
+        global last_layer_id
+        is_last_layer = (self.layer_id == last_layer_id)
+        out_dtype = torch.float16
+        if is_last_layer:
+            out_dtype = torch.float32
+
         if enable_esimd_opt and n_tokens <= 8:
             # if state.is_a and get_tensor_model_parallel_rank() == 0:
             #     print("ot ", time.perf_counter())
             shared_output = state.pop("shared_output")
-            final_hidden_states = torch.empty_like(shared_output)
+            final_hidden_states = torch.empty(shared_output.shape, dtype=out_dtype, device=shared_output.device)
             if final_hidden_states_expects_out is not None:
                 esimd_mul_scale_factor_and_add(
                     final_hidden_states_expects_out,  # bf16
@@ -950,7 +975,7 @@ class DeepseekV2MoE(nn.Module):
                     self.routed_scaling_factor,  # float
                 )
             else:
-                final_hidden_states = shared_output
+                final_hidden_states[...] = shared_output
         else:
             final_hidden_states = final_hidden_states_expects_out
             if (shared_output := state.pop("shared_output")) is not None:
@@ -2816,6 +2841,8 @@ class DeepseekV2Model(nn.Module):
         # YC WA
         if enable_6_layer_dbg:
             config.num_hidden_layers = 6
+        global last_layer_id
+        last_layer_id = config.num_hidden_layers - 1
         super().__init__()
         self.padding_id = config.pad_token_id
         self.vocab_size = config.vocab_size

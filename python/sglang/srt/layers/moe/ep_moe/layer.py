@@ -1275,6 +1275,7 @@ class EPMoEHeto(EPMoESparse):
         hidden_states: torch.Tensor,
         router_logits: torch.Tensor,
         op_shared_experts: Optional[Callable] = None,
+        out_dtype = torch.float16,
     ):
         # hidden_states will be destroyed in the process, so we need to save its properties
         # for later use
@@ -1307,8 +1308,7 @@ class EPMoEHeto(EPMoESparse):
             result = self.forward_routed_experts_combine(
                 hidden_states_shape,
                 hidden_states_device,
-                # hidden_states_dtype,
-                torch.float32,
+                out_dtype,
                 gpu_result,
                 cpu_result,
             )
