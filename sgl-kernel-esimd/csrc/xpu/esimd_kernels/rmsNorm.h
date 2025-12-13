@@ -59,7 +59,8 @@ ESIMD_INLINE void residual_rmsNorm128PerThread_64t(uint8_t* weight, uint8_t* res
 
   if (add_residual == 1)
   {
-    input = input_in + residual_FP16;
+    input = input_in;
+    input = input + residual_FP16;
   }
   else
   {

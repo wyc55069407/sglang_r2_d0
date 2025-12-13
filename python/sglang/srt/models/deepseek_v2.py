@@ -482,7 +482,7 @@ class DeepseekV2MoE(nn.Module):
         is_last_layer = (self.layer_id == last_layer_id)
         out_dtype = hidden_states.dtype
         if is_last_layer:
-            out_dtype = torch.float32
+            out_dtype = torch.bfloat16
 
         n_tokens = hidden_states.shape[0]
         if enable_dummy_cpu_moe and n_tokens > 8:
@@ -597,7 +597,7 @@ class DeepseekV2MoE(nn.Module):
             if global_server_args_dict["enable_ep_moe_heto"] or not _is_cuda:
                 final_hidden_states *= self.routed_scaling_factor
             if shared_output is not None:
-                final_hidden_states = final_hidden_states + shared_output
+                final_hidden_states = final_hidden_states + shared_output.to(out_dtype)
 
         # print(get_tensor_model_parallel_rank(), " ", final_hidden_states.dtype)
         if self.tp_size > 1:
@@ -825,7 +825,7 @@ class DeepseekV2MoE(nn.Module):
             is_last_layer = (self.layer_id == last_layer_id)
             out_dtype = hidden_states_dtype
             if is_last_layer:
-                out_dtype = torch.float32
+                out_dtype = torch.bfloat16
             if enable_esimd_opt and state.n_tokens <= 8:
                 gpu_result = state.pop("gpu_experts_result")
                 cpu_result = state.pop("cpu_experts_result")
@@ -958,7 +958,7 @@ class DeepseekV2MoE(nn.Module):
         is_last_layer = (self.layer_id == last_layer_id)
         out_dtype = torch.float16
         if is_last_layer:
-            out_dtype = torch.float32
+            out_dtype = torch.bfloat16
 
         if enable_esimd_opt and n_tokens <= 8:
             # if state.is_a and get_tensor_model_parallel_rank() == 0:
@@ -979,7 +979,7 @@ class DeepseekV2MoE(nn.Module):
         else:
             final_hidden_states = final_hidden_states_expects_out
             if (shared_output := state.pop("shared_output")) is not None:
-                x = shared_output
+                x = shared_output.to(out_dtype)
                 x.add_(final_hidden_states, alpha=self.routed_scaling_factor)
                 final_hidden_states = x
             else:
@@ -2943,7 +2943,6 @@ class DeepseekV2Model(nn.Module):
         #     hidden_states[...] = 0
         #     print("modified!!!!")
         #     print(hidden_states)
-
 
         if not forward_batch.forward_mode.is_idle():
             if residual is None:

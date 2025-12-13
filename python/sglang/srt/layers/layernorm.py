@@ -111,9 +111,9 @@ class RMSNorm(CustomOp):
     def esimd_rmsNormFuse(self, hidden_states, seq_len, residual, intype):
         hidden_states_out = torch.empty(hidden_states.shape, dtype=torch.float16, device=hidden_states.device)
 
-        isFloat32 = 0
-        if intype == torch.float32:
-            isFloat32 = 1
+        isBFloat16 = 0
+        if intype == torch.bfloat16:
+            isBFloat16 = 1
         add_residual = 0
         residual_in = hidden_states
         if residual is not None:
@@ -134,7 +134,7 @@ class RMSNorm(CustomOp):
             hidden_states.shape[-1],
             seq_len,
             add_residual,
-            isFloat32,
+            isBFloat16,
             0,
             0,
             0,
